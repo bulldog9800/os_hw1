@@ -6,6 +6,10 @@
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
 
+using std::string;
+
+const std::string WHITESPACE = " \n\r\t\f\v";
+
 class Command {
 // TODO: Add your data members
  public:
@@ -60,6 +64,16 @@ class GetCurrDirCommand : public BuiltInCommand {
   GetCurrDirCommand(const char* cmd_line);
   virtual ~GetCurrDirCommand() {}
   void execute() override;
+};
+
+class ChangePromptCommand : public BuiltInCommand {
+    string new_prompt;
+    char** args;
+    int num_of_args;
+public:
+    ChangePromptCommand(const char *cmd_line);
+    virtual ~ChangePromptCommand() {}
+    void execute() override;
 };
 
 class ShowPidCommand : public BuiltInCommand {
@@ -142,7 +156,7 @@ class CatCommand : public BuiltInCommand {
 
 class SmallShell {
  private:
-  // TODO: Add your data members
+  string prompt;
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);
@@ -156,6 +170,9 @@ class SmallShell {
   }
   ~SmallShell();
   void executeCommand(const char* cmd_line);
+  const string& getPrompt();
+  void changePrompt(const string& new_prompt);
+
   // TODO: add extra methods as needed
 };
 
