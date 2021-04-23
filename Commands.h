@@ -59,7 +59,8 @@ class RedirectionCommand : public Command {
 };
 
 class ChangeDirCommand : public BuiltInCommand {
-// TODO: Add your data members public:
+    char** args;
+    int num_of_args;
   ChangeDirCommand(const char* cmd_line, char** plastPwd);
   virtual ~ChangeDirCommand() {}
   void execute() override;
@@ -68,7 +69,7 @@ class ChangeDirCommand : public BuiltInCommand {
 class GetCurrDirCommand : public BuiltInCommand {
  public:
   GetCurrDirCommand(const char* cmd_line);
-  virtual ~GetCurrDirCommand() {}
+  virtual ~GetCurrDirCommand(){}
   void execute() override;
 };
 
@@ -78,7 +79,7 @@ class ChangePromptCommand : public BuiltInCommand {
     int num_of_args;
 public:
     ChangePromptCommand(const char *cmd_line);
-    virtual ~ChangePromptCommand() {}
+    virtual ~ChangePromptCommand();
     void execute() override;
 };
 
@@ -163,6 +164,7 @@ class CatCommand : public BuiltInCommand {
 class SmallShell {
  private:
   string prompt;
+  string last_working_dir;
   SmallShell();
  public:
   Command *CreateCommand(const char* cmd_line);
@@ -178,6 +180,8 @@ class SmallShell {
   void executeCommand(const char* cmd_line);
   const string& getPrompt();
   void changePrompt(const string& new_prompt);
+  const string& getLWD();
+  void changeLWD(const string& new_lwd);
 
   // TODO: add extra methods as needed
 };

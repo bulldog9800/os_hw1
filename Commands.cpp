@@ -78,8 +78,8 @@ void _removeBackgroundSign(char* cmd_line) {
 
 // TODO: Add your implementation for classes in Commands.h 
 
-SmallShell::SmallShell() {
-// TODO: add your implementation
+SmallShell::SmallShell(): prompt("smash> "), last_working_dir("") {
+
 }
 
 SmallShell::~SmallShell() {
@@ -132,8 +132,17 @@ void SmallShell::changePrompt(const string &new_prompt) {
     prompt = new_prompt;
 }
 
+const string &SmallShell::getLWD() {
+    return last_working_dir;
+}
+
+void SmallShell::changeLWD(const string &new_lwd) {
+    last_working_dir = new_lwd;
+}
+
 ChangePromptCommand::ChangePromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line), new_prompt("smash> "),
 num_of_args(0){
+    args = new char*[20];
     num_of_args = _parseCommandLine(cmd_line, args);
     assert(strcmp(args[0],"chprompt")==0);
 }
@@ -152,6 +161,10 @@ void ChangePromptCommand::execute() {
     smash.changePrompt(this->new_prompt);
 }
 
+ChangePromptCommand::~ChangePromptCommand() {
+    delete args;
+}
+
 ShowPidCommand::ShowPidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {
 
 }
@@ -164,6 +177,12 @@ GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line) : BuiltInCommand(cmd_
 
 }
 
+
+
 void GetCurrDirCommand::execute() {
     cout << string (getcwd(NULL,0)) << "\n" ;
+}
+
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char **plastPwd): BuiltInCommand(cmd_line),  {
+
 }
