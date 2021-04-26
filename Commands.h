@@ -2,6 +2,7 @@
 #define SMASH_COMMAND_H_
 
 #include <vector>
+#include <string>
 
 #define COMMAND_ARGS_MAX_LENGTH (200)
 #define COMMAND_MAX_ARGS (20)
@@ -67,6 +68,7 @@ class RedirectionCommand : public Command {
 class ChangeDirCommand : public BuiltInCommand {
     char** args;
     int num_of_args;
+public:
   ChangeDirCommand(const char* cmd_line);
   virtual ~ChangeDirCommand();
   void execute() override;

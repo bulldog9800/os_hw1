@@ -108,6 +108,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   else if (firstWord.compare("chprompt") == 0) {
       return new ChangePromptCommand(cmd_line);
   }
+  else if (firstWord.compare("cd") == 0) {
+      return new ChangeDirCommand(cmd_line);
+  }
 
 
   return nullptr;
@@ -172,7 +175,10 @@ BuiltInCommand::BuiltInCommand(const char* cmd_line): Command(cmd_line){
 ChangePromptCommand::ChangePromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line), new_prompt("smash> "),
 num_of_args(0){
     args = new char*[20];
-    num_of_args = _parseCommandLine(cmd_line, args);
+    char* line = new char[strlen(cmd_line)+1];
+    strcpy(line, cmd_line);
+    _removeBackgroundSign(line);
+    num_of_args = _parseCommandLine(line, args);
     assert(strcmp(args[0],"chprompt")==0);
 }
 
@@ -205,7 +211,7 @@ ShowPidCommand::ShowPidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) 
 }
 
 void ShowPidCommand::execute() {
-    cout << getpid();
+    cout << "smash pid is " << getpid() << endl;
 }
 
 GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line){
@@ -225,7 +231,10 @@ void GetCurrDirCommand::execute() {
 
 ChangeDirCommand::ChangeDirCommand(const char *cmd_line): BuiltInCommand(cmd_line), num_of_args(0) {
     args = new char*[20];
-    num_of_args = _parseCommandLine(cmd_line, args);
+    char* line = new char[strlen(cmd_line)+1];
+    strcpy(line, cmd_line);
+    _removeBackgroundSign(line);
+    num_of_args = _parseCommandLine(line, args);
     assert(strcmp(args[0],"cd")==0);
 }
 
@@ -284,8 +293,8 @@ ExternalCommand::ExternalCommand(const char *cmd_line) : Command(cmd_line),is_bg
 
 }
 void ExternalCommand::execute() {
-    SmallShell& smash =SmallShell::getInstance() ;
-    pid_t pid =fork() ;
+    SmallShell& smash = SmallShell::getInstance() ;
+    pid_t pid = fork();
     if (pid<0){
         perror("smash error: fork failed");
         return;
