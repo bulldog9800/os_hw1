@@ -61,8 +61,8 @@ class RedirectionCommand : public Command {
 class ChangeDirCommand : public BuiltInCommand {
     char** args;
     int num_of_args;
-  ChangeDirCommand(const char* cmd_line, char** plastPwd);
-  virtual ~ChangeDirCommand() {}
+  ChangeDirCommand(const char* cmd_line);
+  virtual ~ChangeDirCommand();
   void execute() override;
 };
 

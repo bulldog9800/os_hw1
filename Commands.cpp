@@ -183,6 +183,55 @@ void GetCurrDirCommand::execute() {
     cout << string (getcwd(NULL,0)) << "\n" ;
 }
 
-ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char **plastPwd): BuiltInCommand(cmd_line),  {
+
+/***************
+    CHANGE DIR COMMAND (cd)
+***************/
+
+ChangeDirCommand::ChangeDirCommand(const char *cmd_line): BuiltInCommand(cmd_line), num_of_args(0) {
+    args = new char*[20];
+    num_of_args = _parseCommandLine(cmd_line, args);
+    assert(strcmp(args[0],"cd")==0);
+}
+
+ChangeDirCommand::~ChangeDirCommand(){
+    delete args;
+}
+
+void ChangeDirCommand::execute() {
+    if (num_of_args > 2){
+        cerr << "smash error: cd: too many arguments" << endl;
+    }
+    else if(num_of_args==1){
+        return;
+    }
+    else{
+        SmallShell& smash = SmallShell::getInstance();
+
+        assert(num_of_args==2);
+        if (strcmp(args[1],"-")==0) {
+            if(smash.getLWD().empty()) {
+                cerr << "smash error: cd: OLDPWD not set" << endl;
+                return;
+            }
+            else {
+                string temp = smash.getLWD();
+                smash.changeLWD(string (getcwd(NULL,0)));
+                if (chdir(temp.c_str())==-1){
+                    perror("smash error: chdir failed");
+                }
+                return;
+            }
+        }
+        else {
+            smash.changeLWD(string (getcwd(NULL,0)));
+            if(chdir(args[1])==-1){
+                perror("smash error: chdir failed");
+            }
+            return;
+        }
+
+    }
 
 }
+
