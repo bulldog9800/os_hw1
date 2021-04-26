@@ -109,9 +109,6 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
       return new ChangePromptCommand(cmd_line);
   }
 
-  else {
-    return new ExternalCommand(cmd_line);
-  }
 
   return nullptr;
 }
@@ -140,6 +137,38 @@ void SmallShell::changeLWD(const string &new_lwd) {
     last_working_dir = new_lwd;
 }
 
+/********************
+ *
+ *  CLASS COMMAND
+ *
+ ********************/
+
+Command::Command(const char *cmd_line) {
+    this->cmd_line = new char[strlen(cmd_line)+1];
+    strcpy(this->cmd_line, cmd_line);
+}
+
+Command::~Command() {
+    delete this->cmd_line;
+}
+
+/**************************
+ *
+ * CLASS BUILT-IN COMMAND
+ *
+ **************************/
+
+BuiltInCommand::BuiltInCommand(const char* cmd_line): Command(cmd_line){
+
+}
+
+
+/***************************
+ *
+ * CLASS CHANGE PROMPT COMMAND
+ *
+ ****************************/
+
 ChangePromptCommand::ChangePromptCommand(const char *cmd_line) : BuiltInCommand(cmd_line), new_prompt("smash> "),
 num_of_args(0){
     args = new char*[20];
@@ -164,6 +193,12 @@ void ChangePromptCommand::execute() {
 ChangePromptCommand::~ChangePromptCommand() {
     delete args;
 }
+
+/************************************
+ *
+ * CLASS SHOW PID COMMAND
+ *
+ *************************************/
 
 ShowPidCommand::ShowPidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {
 
