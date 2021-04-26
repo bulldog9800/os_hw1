@@ -292,11 +292,14 @@ void ExternalCommand::execute() {
     }
     if(pid==0){
         char* exec_args[4]={"bash","-c",command,NULL} ;
+        setpgrp();
+        perror("smash error: setgrp failed");
         execv("/bin/bash",exec_args) ;
         perror("smash error: execv failed") ;
         return;
     }
     else {
+       waitpid(pid,NULL,0);
 
     }
 
@@ -305,5 +308,6 @@ void ExternalCommand::execute() {
 
 ExternalCommand::~ExternalCommand(){
     delete args ;
+    delete command ;
 
 }
