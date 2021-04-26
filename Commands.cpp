@@ -277,6 +277,10 @@ ExternalCommand::ExternalCommand(const char *cmd_line) : Command(cmd_line),is_bg
             _removeBackgroundSign(line);
     args = new char*[20];
     num_of_args = _parseCommandLine(line, args);
+    command =new char[strlen(cmd_line)+1];
+    strcpy(command,cmd_line);
+    _removeBackgroundSign(command);
+
 
 }
 void ExternalCommand::execute() {
@@ -287,6 +291,12 @@ void ExternalCommand::execute() {
         return;
     }
     if(pid==0){
+        char* exec_args[4]={"bash","-c",command,NULL} ;
+        execv("/bin/bash",exec_args) ;
+        perror("smash error: execv failed") ;
+        return;
+    }
+    else {
 
     }
 

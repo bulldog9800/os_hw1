@@ -34,6 +34,7 @@ class ExternalCommand : public Command {
     char** args;
     int num_of_args;
     bool is_bg ;
+    char* command ;
   ExternalCommand(const char* cmd_line);
   virtual ~ExternalCommand();
   void execute() override;
