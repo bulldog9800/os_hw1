@@ -270,3 +270,30 @@ void ChangeDirCommand::execute() {
 
 }
 
+ExternalCommand::ExternalCommand(const char *cmd_line) : Command(cmd_line),is_bg(false){
+    is_bg= _isBackgroundComamnd(cmd_line);
+    char* line =new char[strlen(cmd_line+1)];
+            strcpy (line,cmd_line);
+            _removeBackgroundSign(line);
+    args = new char*[20];
+    num_of_args = _parseCommandLine(line, args);
+
+}
+void ExternalCommand::execute() {
+    SmallShell& smash =SmallShell::getInstance() ;
+    pid_t pid =fork() ;
+    if (pid<0){
+        perror("smash error: fork failed");
+        return;
+    }
+    if(pid==0){
+
+    }
+
+}
+
+
+ExternalCommand::~ExternalCommand(){
+    delete args ;
+
+}

@@ -32,6 +32,6 @@ We recommend that you start your implementation with:
 - implement the execution of external commands in the background
 - implement the jobs list and all relevant commands (fg/bg/jobs/...) 
 - implement the I/O redirection and the pipes
-- Finally implement the bonus command.
+- Finally implement the bonus command.r
 
 Good luck :)

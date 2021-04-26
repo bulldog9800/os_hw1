@@ -24,14 +24,18 @@ class Command {
 
 class BuiltInCommand : public Command {
  public:
+
   BuiltInCommand(const char* cmd_line);
   virtual ~BuiltInCommand() {}
 };
 
 class ExternalCommand : public Command {
  public:
+    char** args;
+    int num_of_args;
+    bool is_bg ;
   ExternalCommand(const char* cmd_line);
-  virtual ~ExternalCommand() {}
+  virtual ~ExternalCommand();
   void execute() override;
 };
 
@@ -105,7 +109,13 @@ class QuitCommand : public BuiltInCommand {
 class JobsList {
  public:
   class JobEntry {
-   // TODO: Add your data members
+   int job_id ;
+   int process_id ;
+   bool is_bg ;
+   bool is_stoped ;
+   string command ;
+   int curr_pid ;
+
   };
  // TODO: Add your data members
  public:
