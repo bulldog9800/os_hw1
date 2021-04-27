@@ -399,3 +399,15 @@ void JobsList::killAllJobs() {
     }
     max_job_id = 1;
 }
+
+void JobsList::printJobsList() {
+    removeFinishedJobs() ;
+    for(int i=0;i<jobs.size();i++){
+        if(jobs[i]->is_stopped){
+            cout<< jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<difftime(time(NULL),jobs[i]->time)<<"(stopped)"<< endl ;
+        }
+        else {
+            cout << jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<difftime(time(NULL),jobs[i]->time)<<endl ;
+        }
+    }
+}

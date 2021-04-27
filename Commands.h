@@ -111,6 +111,7 @@ class QuitCommand : public BuiltInCommand {
 class JobEntry {
 public:
     int job_id;
+    time_t time ;
     int process_id;
     bool is_bg;
     bool is_stopped;
