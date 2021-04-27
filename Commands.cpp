@@ -349,3 +349,11 @@ void JobsList::removeJobById(int jobId) {
         }
     }
 }
+JobEntry * JobsList::getLastStoppedJob(int *jobId) {
+    auto rit = jobs.rbegin();
+    for(; rit!=jobs.rend(); ++rit){
+        if((*rit)->is_stopped)
+            return *rit ;
+    }
+    return nullptr ;
+}
