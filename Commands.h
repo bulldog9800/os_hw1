@@ -15,6 +15,7 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 class Command {
 // TODO: Add your data members
     char* cmd_line;
+    pid_t pid;
  public:
   Command(const char* cmd_line);
   virtual ~Command();

@@ -399,3 +399,8 @@ void JobsList::killAllJobs() {
     }
     max_job_id = 1;
 }
+
+void JobsList::addJob(Command *cmd, bool isStopped) {
+    removeFinishedJobs();
+
+}
