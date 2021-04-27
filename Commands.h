@@ -109,18 +109,21 @@ class QuitCommand : public BuiltInCommand {
 
 
 class JobEntry {
+public:
     int job_id;
     int process_id;
     bool is_bg;
     bool is_stopped;
     string command;
     time_t start_time;
+    bool operator ==(const JobEntry& j)const;
 };
 
 class JobsList {
  public:
-  vector<JobEntry> jobs;
+  vector<JobEntry*> jobs;
   int max_job_id;
+
 
 
 
@@ -136,6 +139,7 @@ class JobsList {
   void removeJobById(int jobId);
   JobEntry * getLastJob(int* lastJobId);
   JobEntry *getLastStoppedJob(int *jobId);
+
   // TODO: Add extra methods or modify exisitng ones as needed
 };
 
