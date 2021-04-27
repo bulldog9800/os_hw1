@@ -369,3 +369,25 @@ JobEntry * JobsList::getLastStoppedJob(int *jobId) {
     *jobId = -1;
     return nullptr ;
 }
+
+void JobsList::removeFinishedJobs() {
+    for(int i=0 ;i<jobs.size();i++){
+        int res=waitpid(jobs[i]->process_id,NULL,WNOHANG) ;
+        if (res==-1){
+            perror("“smash error: waitpid failed");
+        }
+        if(res>0){
+
+            JobEntry* temp = jobs[i];
+            jobs.erase(jobs.begin()+i);
+            delete temp;
+        }
+    }
+}
+
+
+void JobsList::killAllJobs() {
+    for(int i=0 ;i<jobs.size();i++){
+        killpg(jobs[i]->process_id,s)
+    }
+}
