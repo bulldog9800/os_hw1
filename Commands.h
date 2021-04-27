@@ -8,6 +8,7 @@
 #define COMMAND_MAX_ARGS (20)
 
 using std::string;
+using std::vector;
 
 const std::string WHITESPACE = " \n\r\t\f\v";
 
@@ -107,19 +108,22 @@ class QuitCommand : public BuiltInCommand {
 };
 
 
-
+class JobEntry {
+    int job_id;
+    int process_id;
+    bool is_bg;
+    bool is_stopped;
+    string command;
+    time_t start_time;
+};
 
 class JobsList {
  public:
-  class JobEntry {
-   int job_id ;
-   int process_id ;
-   bool is_bg ;
-   bool is_stoped ;
-   string command ;
-   int curr_pid ;
+  vector<JobEntry> jobs;
+  int max_job_id;
 
-  };
+
+
  // TODO: Add your data members
  public:
   JobsList();
