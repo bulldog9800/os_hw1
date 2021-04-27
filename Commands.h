@@ -116,18 +116,12 @@ public:
     bool is_stopped;
     string command;
     time_t start_time;
-    bool operator ==(const JobEntry& j)const;
 };
 
 class JobsList {
- public:
   vector<JobEntry*> jobs;
   int max_job_id;
 
-
-
-
- // TODO: Add your data members
  public:
   JobsList();
   ~JobsList();
@@ -139,7 +133,6 @@ class JobsList {
   void removeJobById(int jobId);
   JobEntry * getLastJob(int* lastJobId);
   JobEntry *getLastStoppedJob(int *jobId);
-
   // TODO: Add extra methods or modify exisitng ones as needed
 };
 
@@ -188,6 +181,7 @@ class SmallShell {
   string prompt;
   string last_working_dir;
   SmallShell();
+  JobsList jobs_list;
  public:
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
@@ -204,6 +198,7 @@ class SmallShell {
   void changePrompt(const string& new_prompt);
   const string& getLWD();
   void changeLWD(const string& new_lwd);
+  JobsList& getJobsList();
 
   // TODO: add extra methods as needed
 };
