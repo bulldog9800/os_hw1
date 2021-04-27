@@ -374,13 +374,14 @@ void JobsList::removeFinishedJobs() {
     for(int i=0 ;i<jobs.size();i++){
         int res=waitpid(jobs[i]->process_id,NULL,WNOHANG) ;
         if (res==-1){
-            perror("“smash error: waitpid failed");
+            perror("smash error: waitpid failed");
         }
         if(res>0){
 
             JobEntry* temp = jobs[i];
             jobs.erase(jobs.begin()+i);
             delete temp;
+
         }
     }
 }
@@ -388,6 +389,13 @@ void JobsList::removeFinishedJobs() {
 
 void JobsList::killAllJobs() {
     for(int i=0 ;i<jobs.size();i++){
-        killpg(jobs[i]->process_id,s)
+       if( killpg(jobs[i]->process_id,SIGKILL)<0){
+           perror("smash error: killpg failed");
+       }
+        JobEntry* temp = jobs[i];
+       jobs.erase(jobs.begin()+i);
+        delete temp;
+
     }
+    max_job_id = 1;
 }
