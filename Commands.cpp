@@ -349,11 +349,23 @@ void JobsList::removeJobById(int jobId) {
         }
     }
 }
+
+JobEntry *JobsList::getLastJob(int *lastJobId) {
+    if(jobs.empty()){
+        *lastJobId = -1;
+        return nullptr;
+    }
+    *lastJobId = jobs[jobs.size()-1]->job_id;
+    return jobs[jobs.size()-1];
+}
 JobEntry * JobsList::getLastStoppedJob(int *jobId) {
     auto rit = jobs.rbegin();
     for(; rit!=jobs.rend(); ++rit){
-        if((*rit)->is_stopped)
-            return *rit ;
+        if((*rit)->is_stopped) {
+            *jobId = (*rit)->job_id;
+            return *rit;
+        }
     }
+    *jobId = -1;
     return nullptr ;
 }
