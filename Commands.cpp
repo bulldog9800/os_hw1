@@ -140,6 +140,10 @@ void SmallShell::changeLWD(const string &new_lwd) {
     last_working_dir = new_lwd;
 }
 
+JobsList &SmallShell::getJobsList() {
+    return jobs_list;
+}
+
 /********************
  *
  *  CLASS COMMAND
@@ -319,4 +323,18 @@ ExternalCommand::~ExternalCommand(){
     delete args ;
     delete command ;
 
+}
+
+JobsList::JobsList(): jobs(), max_job_id(1) {
+
+}
+
+void JobsList::removeJobById(int jobId) {
+    for(int i=0; i<jobs.size(); i++){
+        if (jobs[i]->job_id == jobId){
+            JobEntry* temp = jobs[i];
+            jobs.erase(jobs.begin()+i);
+            delete temp;
+        }
+    }
 }

@@ -109,6 +109,7 @@ class QuitCommand : public BuiltInCommand {
 
 
 class JobEntry {
+public:
     int job_id;
     int process_id;
     bool is_bg;
@@ -118,13 +119,9 @@ class JobEntry {
 };
 
 class JobsList {
- public:
-  vector<JobEntry> jobs;
+  vector<JobEntry*> jobs;
   int max_job_id;
 
-
-
- // TODO: Add your data members
  public:
   JobsList();
   ~JobsList();
@@ -184,6 +181,7 @@ class SmallShell {
   string prompt;
   string last_working_dir;
   SmallShell();
+  JobsList jobs_list;
  public:
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
@@ -200,6 +198,7 @@ class SmallShell {
   void changePrompt(const string& new_prompt);
   const string& getLWD();
   void changeLWD(const string& new_lwd);
+  JobsList& getJobsList();
 
   // TODO: add extra methods as needed
 };
