@@ -329,6 +329,17 @@ JobsList::JobsList(): jobs(), max_job_id(1) {
 
 }
 
+bool JobEntry::operator==(const JobEntry& j) const{
+    return this->job_id== j.job_id ;
+}
+JobEntry * JobsList::getJobById(int jobId) {
+    for (int i=0;i<jobs.size();i++){
+        if (jobs[i]->job_id==jobId)
+            return jobs[i];
+    }
+    return nullptr ;
+}
+
 void JobsList::removeJobById(int jobId) {
     for(int i=0; i<jobs.size(); i++){
         if (jobs[i]->job_id == jobId){

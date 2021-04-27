@@ -116,6 +116,7 @@ public:
     bool is_stopped;
     string command;
     time_t start_time;
+    bool operator==(const JobEntry& j) const;
 };
 
 class JobsList {
