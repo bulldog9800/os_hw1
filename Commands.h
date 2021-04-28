@@ -166,9 +166,10 @@ class ForegroundCommand : public BuiltInCommand {
 };
 
 class BackgroundCommand : public BuiltInCommand {
- // TODO: Add your data members
+    char** args;
+    int num_of_args;
  public:
-  BackgroundCommand(const char* cmd_line, JobsList* jobs);
+  BackgroundCommand(const char* cmd_line);
   virtual ~BackgroundCommand() {}
   void execute() override;
 };

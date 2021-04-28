@@ -438,7 +438,7 @@ void JobsList::printJobsList() {
 
 void JobsList::addJob(Command *cmd, pid_t pid, bool isStopped) {
     removeFinishedJobs();
-    int next_job_id = max_job_id + 1;
+    int next_job_id = jobs[jobs.size()-1]->job_id + 1;
     bool is_bg = ((ExternalCommand*)cmd)->is_bg;
     time_t start_time = time(nullptr);
     if(start_time == -1){
@@ -446,12 +446,13 @@ void JobsList::addJob(Command *cmd, pid_t pid, bool isStopped) {
     }
     string command = string(cmd->getCommand());
     auto* job_entry = new JobEntry(next_job_id, pid, is_bg, isStopped, command, start_time);
+
     jobs.push_back(job_entry);
 }
 
-/***************
+/***************************
     jobs command
-***************/
+****************************/
 JobsCommand::JobsCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 void JobsCommand::execute() {
     SmallShell& smash = SmallShell::getInstance();
@@ -517,5 +518,16 @@ void KillCommand::execute() {
         our_job->is_stopped= false ;
         our_job->is_bg= true ;
     }
+
+}
+
+
+/****************************
+*
+*     BACKGROUND COMMAND
+*
+*****************************/
+
+BackgroundCommand::BackgroundCommand(const char *cmd_line): BuiltInCommand(cmd_line) {
 
 }
