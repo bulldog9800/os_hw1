@@ -129,7 +129,7 @@ class JobsList {
  public:
   JobsList();
   ~JobsList() = default;
-  void addJob(Command* cmd, bool isStopped = false);
+  void addJob(Command* cmd, pid_t pid, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
@@ -143,16 +143,17 @@ class JobsList {
 class JobsCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
-  JobsCommand(const char* cmd_line, JobsList* jobs);
+  JobsCommand(const char* cmd_line);
   virtual ~JobsCommand() {}
   void execute() override;
 };
 
 class KillCommand : public BuiltInCommand {
- // TODO: Add your data members
+    char** args;
+    int num_of_args;
  public:
   KillCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~KillCommand() {}
+  virtual ~KillCommand() ;
   void execute() override;
 };
 

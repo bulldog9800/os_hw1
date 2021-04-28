@@ -434,17 +434,7 @@ void JobsList::printJobsList() {
     }
 }
 
-void JobsList::printJobsList() {
-    removeFinishedJobs() ;
-    for(int i=0;i<jobs.size();i++){
-        if(jobs[i]->is_stopped){
-            cout<< jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->time)<<"(stopped)"<< endl ;
-        }
-        else {
-            cout << jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->time)<<endl ;
-        }
-    }
-}
+
 
 void JobsList::addJob(Command *cmd, pid_t pid, bool isStopped) {
     removeFinishedJobs();
