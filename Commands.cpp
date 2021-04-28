@@ -600,5 +600,53 @@ void ForegroundCommand::execute() {
 *****************************/
 
 BackgroundCommand::BackgroundCommand(const char *cmd_line): BuiltInCommand(cmd_line) {
-
+    args = new char*[20];
+    char* line = new char[strlen(cmd_line)+1];
+    strcpy(line, cmd_line);
+    _removeBackgroundSign(line);
+    num_of_args = _parseCommandLine(line, args);
+    delete[] line;
 }
+
+void BackgroundCommand::execute() {
+    SmallShell& smash = SmallShell::getInstance();
+    if(num_of_args>2){
+        std::cerr << "smash error: bg: invalid arguments" << endl;
+        return;
+    }
+
+    /// No args
+    if (num_of_args==1){
+        int* job_id;
+        if(smash.jobs_list->getLastStoppedJob(job_id) == nullptr) {
+            std::cerr<<"smash error: bg: there is no stopped jobs to resume" <<endl ;
+            return;
+        }
+        JobEntry* our_job = smash.jobs_list->getLastJob(job_id);
+        cout << our_job->command << " : " << our_job->process_id;
+        if(kill(our_job->process_id,SIGCONT)==-1){
+            perror("smash error: kill failed");
+            return;
+        }
+    }
+
+    /// With args
+    for (int i = 0; i < strlen(args[1]); i++) {
+        if(!isdigit(args[1][i])){
+            std::cerr << "smash error: fg: invalid arguments" << endl;
+            return;
+        }
+        int job_id = atoi(args[1]);
+        JobEntry* our_job = smash.jobs_list->getJobById(job_id);
+        if(our_job== nullptr){
+            cerr<<" smash error: fg: job-id " << job_id << "does not exist" << endl;
+            return;
+        }
+        cout << our_job->command << " : " << our_job->process_id;
+        if(kill(our_job->process_id,SIGCONT)==-1){
+            perror("smash error: kill failed");
+            return;
+        }
+    }
+}
+
