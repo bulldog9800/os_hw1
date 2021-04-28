@@ -411,3 +411,73 @@ void JobsList::printJobsList() {
         }
     }
 }
+/***************
+    jobs command
+***************/
+JobsCommand::JobsCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
+void JobsCommand::execute() {
+    SmallShell& smash = SmallShell::getInstance();
+    smash.jobs_list->printJobsList();
+}
+
+/***************
+    killcommand
+***************/
+KillCommand::KillCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line) {
+    args = new char*[20];
+    char* line = new char[strlen(cmd_line)+1];
+    strcpy(line, cmd_line);
+    _removeBackgroundSign(line);
+    num_of_args = _parseCommandLine(line, args);
+    delete[] line;
+
+}
+KillCommand::~KillCommand() {
+    delete args;
+
+}
+void KillCommand::execute() {
+    if(num_of_args!=3){
+        std::cerr << "smash error: kill: invalid arguments" << endl ;
+        return;
+    }
+    if (args[1][0]!='-'){
+        std::cerr << "smash error: kill: invalid arguments" << endl ;
+        return;
+    }
+    for (int i=1;i< strlen(args[1]);i++){
+        if (!isdigit(args[1][i])){
+            std::cerr << "smash error: kill: invalid arguments" << endl ;
+            return;
+        }
+    }
+
+    for (int i=0;i< strlen(args[2]);i++){
+        if (!isdigit(args[2][i])){
+            std::cerr << "smash error: kill: invalid arguments" << endl ;
+            return;
+        }
+
+    }
+
+    SmallShell& smash = SmallShell::getInstance();
+    int job_id = atoi(args[2]);
+    string signal_str = string(args[1]);
+    signal_str.erase(signal_str.begin());
+    int sig = stoi(signal_str);
+    JobEntry* our_job =smash.jobs_list->getJobById(job_id);
+            if(our_job== nullptr){
+                std::cerr <<"smash error: kill: job-id " << job_id << " does not exist" << std::endl ;
+                return;
+            }
+    if(killpg(our_job->process_id, sig) < 0) {
+        perror("smash error: killpg failed");
+        return;
+    }
+    std::cout << "signal number " << sig << " was sent to pid " << our_job->process_id<< std::endl;
+    if(sig==SIGCONT){
+        our_job->is_stopped= false ;
+        our_job->is_bg= true ;
+    }
+
+}

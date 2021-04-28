@@ -141,16 +141,17 @@ class JobsList {
 class JobsCommand : public BuiltInCommand {
  // TODO: Add your data members
  public:
-  JobsCommand(const char* cmd_line, JobsList* jobs);
+  JobsCommand(const char* cmd_line);
   virtual ~JobsCommand() {}
   void execute() override;
 };
 
 class KillCommand : public BuiltInCommand {
- // TODO: Add your data members
+    char** args;
+    int num_of_args;
  public:
   KillCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~KillCommand() {}
+  virtual ~KillCommand() ;
   void execute() override;
 };
 
@@ -180,11 +181,13 @@ class CatCommand : public BuiltInCommand {
 
 class SmallShell {
  private:
+
   string prompt;
   string last_working_dir;
   SmallShell();
-  JobsList jobs_list;
+
  public:
+  JobsList* jobs_list;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
