@@ -20,6 +20,7 @@ class Command {
   Command(const char* cmd_line);
   virtual ~Command();
   virtual void execute() = 0;
+  char* getCommand();
   //virtual void prepare();
   //virtual void cleanup();
   // TODO: Add your extra methods if needed
@@ -118,6 +119,7 @@ public:
     string command;
     time_t start_time;
     bool operator==(const JobEntry& j) const;
+    JobEntry(int job_id, int pid, bool is_bg, bool is_stopped, string& command, time_t start);
 };
 
 class JobsList {
@@ -126,7 +128,7 @@ class JobsList {
 
  public:
   JobsList();
-  ~JobsList();
+  ~JobsList() = default;
   void addJob(Command* cmd, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
@@ -183,8 +185,9 @@ class SmallShell {
   string prompt;
   string last_working_dir;
   SmallShell();
-  JobsList jobs_list;
+
  public:
+  JobsList* jobs_list;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
