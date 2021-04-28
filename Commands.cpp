@@ -423,7 +423,7 @@ void JobsCommand::execute() {
 /***************
     killcommand
 ***************/
-KillCommand::KillCommand(const char *cmd_line, JobsList *jobs): BuiltInCommand(cmd_line) {
+KillCommand::KillCommand(const char *cmd_line): BuiltInCommand(cmd_line) {
     args = new char*[20];
     char* line = new char[strlen(cmd_line)+1];
     strcpy(line, cmd_line);
@@ -481,3 +481,74 @@ void KillCommand::execute() {
     }
 
 }
+/***************
+    fgcommand
+***************/
+
+ForegroundCommand::ForegroundCommand(const char *cmd_line) : BuiltInCommand(cmd_line){
+    args = new char*[20];
+    char* line = new char[strlen(cmd_line)+1];
+    strcpy(line, cmd_line);
+    _removeBackgroundSign(line);
+    num_of_args = _parseCommandLine(line, args);
+    delete[] line;
+}
+
+ForegroundCommand::~ForegroundCommand()   {
+    delete args;
+}
+
+void ForegroundCommand::execute() {
+    SmallShell& smash = SmallShell::getInstance();
+    smash.jobs_list->removeFinishedJobs();
+    if(num_of_args>2){
+        std::cerr<<"smash error: fg: invalid arguments"<<endl;
+        return;
+    }
+
+    ///no_args
+    if (num_of_args==1){
+       if(smash.jobs_list->jobs.empty()) {
+           std::cerr<<"smash error: fg: jobs list is empty" <<endl ;
+           return;
+       }
+       int* job_id ;
+      JobEntry* our_job = smash.jobs_list->getLastJob(job_id);
+      cout << our_job->command << " : " << our_job->process_id;
+       if(kill(our_job->process_id,SIGCONT)==-1){
+           perror("smash error: kill failed");
+           return;
+       }
+       if(waitpid(our_job->process_id,NULL,WUNTRACED)==-1){
+           perror("smash error: waitpid failed");
+           return;
+       }
+    }
+    ////with_args
+    for (int i = 0; i < strlen(args[1]); i++) {
+        if(!isdigit(args[1][i])){
+            std::cerr<<"smash error: fg: invalid arguments"<<endl;
+            return;
+
+        }
+        int job_id = atoi(args[1]);
+       JobEntry* our_job = smash.jobs_list->getJobById(job_id);
+        if(our_job== nullptr){
+            cerr<<"smash error: fg: job-id "<<job_id<<" does not exist"<<endl;
+            return;
+        }
+        cout << our_job->command << " : " << our_job->process_id;
+        if(kill(our_job->process_id,SIGCONT)==-1){
+            perror("smash error: kill failed");
+            return;
+        }
+        if(waitpid(our_job->process_id,NULL,WUNTRACED)==-1){
+            perror("smash error: waitpid failed");
+            return;
+        }
+
+    }
+
+}
+
+

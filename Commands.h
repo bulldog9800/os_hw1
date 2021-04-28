@@ -121,10 +121,10 @@ public:
 };
 
 class JobsList {
-  vector<JobEntry*> jobs;
-  int max_job_id;
 
  public:
+    vector<JobEntry*> jobs;
+    int max_job_id;
   JobsList();
   ~JobsList()=default ;
   void addJob(Command* cmd, bool isStopped = false);
@@ -150,16 +150,17 @@ class KillCommand : public BuiltInCommand {
     char** args;
     int num_of_args;
  public:
-  KillCommand(const char* cmd_line, JobsList* jobs);
+  KillCommand(const char* cmd_line);
   virtual ~KillCommand() ;
   void execute() override;
 };
 
 class ForegroundCommand : public BuiltInCommand {
- // TODO: Add your data members
+    char** args;
+    int num_of_args;
  public:
-  ForegroundCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~ForegroundCommand() {}
+  ForegroundCommand(const char* cmd_line);
+  virtual ~ForegroundCommand() ;
   void execute() override;
 };
 
