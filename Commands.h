@@ -15,10 +15,12 @@ const std::string WHITESPACE = " \n\r\t\f\v";
 class Command {
 // TODO: Add your data members
     char* cmd_line;
+    pid_t pid;
  public:
   Command(const char* cmd_line);
   virtual ~Command();
   virtual void execute() = 0;
+  char* getCommand();
   //virtual void prepare();
   //virtual void cleanup();
   // TODO: Add your extra methods if needed
@@ -111,13 +113,13 @@ class QuitCommand : public BuiltInCommand {
 class JobEntry {
 public:
     int job_id;
-    time_t time ;
     int process_id;
     bool is_bg;
     bool is_stopped;
     string command;
     time_t start_time;
     bool operator==(const JobEntry& j) const;
+    JobEntry(int job_id, int pid, bool is_bg, bool is_stopped, string& command, time_t start);
 };
 
 class JobsList {
@@ -126,8 +128,8 @@ class JobsList {
     vector<JobEntry*> jobs;
     int max_job_id;
   JobsList();
-  ~JobsList()=default ;
-  void addJob(Command* cmd, bool isStopped = false);
+  ~JobsList() = default;
+  void addJob(Command* cmd, pid_t pid, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
@@ -165,9 +167,10 @@ class ForegroundCommand : public BuiltInCommand {
 };
 
 class BackgroundCommand : public BuiltInCommand {
- // TODO: Add your data members
+    char** args;
+    int num_of_args;
  public:
-  BackgroundCommand(const char* cmd_line, JobsList* jobs);
+  BackgroundCommand(const char* cmd_line);
   virtual ~BackgroundCommand() {}
   void execute() override;
 };
@@ -182,7 +185,6 @@ class CatCommand : public BuiltInCommand {
 
 class SmallShell {
  private:
-
   string prompt;
   string last_working_dir;
   SmallShell();
