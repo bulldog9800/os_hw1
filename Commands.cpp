@@ -650,3 +650,45 @@ void BackgroundCommand::execute() {
     }
 }
 
+
+/****************************
+*
+*     Quit COMMAND
+*
+*****************************/
+QuitCommand::QuitCommand(const char *cmd_line) : BuiltInCommand(cmd_line){
+    args = new char*[20];
+    char* line = new char[strlen(cmd_line)+1];
+    strcpy(line, cmd_line);
+    _removeBackgroundSign(line);
+    num_of_args = _parseCommandLine(line, args);
+    delete[] line;
+}
+QuitCommand::~QuitCommand() {
+    delete args;
+}
+void QuitCommand::execute() {
+    SmallShell& smash = SmallShell::getInstance();
+    smash.jobs_list->removeFinishedJobs() ;
+    if (strcmp(args[1],"kill")==0){
+        cout <<"sending SIGKILL signal to "<<smash.jobs_list->jobs.size()<<" jobs:"<< endl ;
+        for (int i = 0; i <smash.jobs_list->jobs.size() ; i++) {
+            cout <<smash.jobs_list->jobs[i]->process_id<<": "<<smash.jobs_list->jobs[i]->command<<endl;
+
+        }
+        for (int i=0 ;i<smash.jobs_list->jobs.size();i++){
+            if(kill(smash.jobs_list->jobs[i]->process_id,SIGKILL)==-1){
+                perror("smash error: kill failed");
+                return;
+            }
+        }
+
+        exit(0);
+
+    }
+
+    else{
+        exit(0);
+    }
+
+}

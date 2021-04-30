@@ -103,9 +103,10 @@ class ShowPidCommand : public BuiltInCommand {
 
 class JobsList;
 class QuitCommand : public BuiltInCommand {
-// TODO: Add your data members public:
-  QuitCommand(const char* cmd_line, JobsList* jobs);
-  virtual ~QuitCommand() {}
+    char** args;
+    int num_of_args;
+  QuitCommand(const char* cmd_line);
+  virtual ~QuitCommand() ;
   void execute() override;
 };
 
@@ -174,6 +175,7 @@ class BackgroundCommand : public BuiltInCommand {
   virtual ~BackgroundCommand() {}
   void execute() override;
 };
+
 
 class CatCommand : public BuiltInCommand {
  public:
