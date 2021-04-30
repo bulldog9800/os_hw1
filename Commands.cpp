@@ -336,6 +336,7 @@ void ExternalCommand::execute() {
     }
     else {
         if (is_bg){
+            SmallShell::jobs_list->addJob(this, pid);
             waitpid(pid, nullptr, WNOHANG);
         }
         else {
