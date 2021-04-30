@@ -390,6 +390,8 @@ JobEntry *JobsList::getLastJob(int *lastJobId) {
         *lastJobId = -1;
         return nullptr;
     }
+    int size = jobs.size();
+    JobEntry* entry =  jobs[jobs.size()-1];
     *lastJobId = jobs[jobs.size()-1]->job_id;
     return jobs[jobs.size()-1];
 }
@@ -407,7 +409,8 @@ JobEntry * JobsList::getLastStoppedJob(int *jobId) {
 
 void JobsList::removeFinishedJobs() {
     for(int i=0 ;i<jobs.size();i++){
-        int res=waitpid(jobs[i]->process_id,NULL,WNOHANG);
+        int status;
+        int res=waitpid(jobs[i]->process_id, &status,WNOHANG);
         if (res==-1){
             perror("smash error: waitpid failed");
         }
@@ -570,41 +573,55 @@ void ForegroundCommand::execute() {
            std::cerr<<"smash error: fg: jobs list is empty" <<endl ;
            return;
        }
-       int* job_id ;
-      JobEntry* our_job = smash.jobs_list.getLastJob(job_id);
-      cout << our_job->command << " : " << our_job->process_id;
-       if(kill(our_job->process_id,SIGCONT)==-1){
-           perror("smash error: kill failed");
-           return;
-       }
-       if(waitpid(our_job->process_id,NULL,WUNTRACED)==-1){
-           perror("smash error: waitpid failed");
-           return;
-       }
+       int job_id ;
+      JobEntry* our_job = smash.jobs_list.getLastJob(&job_id);
+      cout << our_job->command << " : " << our_job->process_id << endl;
+      if (our_job->is_stopped) {
+          if (kill(our_job->process_id, SIGCONT) == -1) {
+              perror("smash error: kill failed");
+              return;
+          }
+      }
+      int status;
+      if(waitpid(our_job->process_id,&status,WUNTRACED)==-1){
+          perror("smash error: waitpid failed");
+          return;
+      }
+      if (WIFEXITED(status)){
+          smash.jobs_list.jobs.pop_back();
+      }
     }
     ////with_args
-    for (int i = 0; i < strlen(args[1]); i++) {
-        if(!isdigit(args[1][i])){
-            std::cerr<<"smash error: fg: invalid arguments"<<endl;
-            return;
+    else {
+        for (int i = 0; i < strlen(args[1]); i++) {
+            if (!isdigit(args[1][i])) {
+                std::cerr << "smash error: fg: invalid arguments" << endl;
+                return;
+
+            }
+            int job_id = atoi(args[1]);
+            JobEntry *our_job = smash.jobs_list.getJobById(job_id);
+            if (our_job == nullptr) {
+                cerr << "smash error: fg: job-id " << job_id << " does not exist" << endl;
+                return;
+            }
+            cout << our_job->command << " : " << our_job->process_id << endl;
+            if (our_job->is_stopped) {
+                if (kill(our_job->process_id, SIGCONT) == -1) {
+                    perror("smash error: kill failed");
+                    return;
+                }
+            }
+            int status;
+            if (waitpid(our_job->process_id, &status, WUNTRACED) == -1) {
+                perror("smash error: waitpid failed");
+                return;
+            }
+            if (WIFEXITED(status)){
+                smash.jobs_list.removeJobById(our_job->job_id);
+            }
 
         }
-        int job_id = atoi(args[1]);
-       JobEntry* our_job = smash.jobs_list.getJobById(job_id);
-        if(our_job== nullptr){
-            cerr<<"smash error: fg: job-id "<<job_id<<" does not exist"<<endl;
-            return;
-        }
-        cout << our_job->command << " : " << our_job->process_id;
-        if(kill(our_job->process_id,SIGCONT)==-1){
-            perror("smash error: kill failed");
-            return;
-        }
-        if(waitpid(our_job->process_id,NULL,WUNTRACED)==-1){
-            perror("smash error: waitpid failed");
-            return;
-        }
-
     }
 
 }
