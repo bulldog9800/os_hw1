@@ -83,7 +83,7 @@ SmallShell::SmallShell(): prompt("smash> "), last_working_dir("") {
 }
 
 SmallShell::~SmallShell() {
-// TODO: add your implementation
+    delete jobs_list;
 }
 
 /**
