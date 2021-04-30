@@ -10,6 +10,8 @@
 
 using namespace std;
 
+JobsList* SmallShell::jobs_list;
+
 #if 0
 #define FUNC_ENTRY()  \
   cout << __PRETTY_FUNCTION__ << " --> " << endl;
