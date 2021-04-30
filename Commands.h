@@ -172,7 +172,7 @@ class BackgroundCommand : public BuiltInCommand {
     int num_of_args;
  public:
   BackgroundCommand(const char* cmd_line);
-  virtual ~BackgroundCommand() {}
+  virtual ~BackgroundCommand() ;
   void execute() override;
 };
 

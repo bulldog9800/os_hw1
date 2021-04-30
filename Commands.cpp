@@ -607,6 +607,9 @@ BackgroundCommand::BackgroundCommand(const char *cmd_line): BuiltInCommand(cmd_l
     num_of_args = _parseCommandLine(line, args);
     delete[] line;
 }
+BackgroundCommand::~BackgroundCommand()  {
+    delete args ;
+}
 
 void BackgroundCommand::execute() {
     SmallShell& smash = SmallShell::getInstance();
