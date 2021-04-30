@@ -111,6 +111,18 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   else if (firstWord.compare("cd") == 0) {
       return new ChangeDirCommand(cmd_line);
   }
+  else if (firstWord.compare("jobs") == 0) {
+      return new JobsCommand(cmd_line);
+  }
+  else if (firstWord.compare("bg") == 0) {
+      return new BackgroundCommand(cmd_line);
+  }
+  else if (firstWord.compare("fg") == 0) {
+      return new ForegroundCommand(cmd_line);
+  }
+  else{
+      return new ExternalCommand(cmd_line);
+  }
 
 
   return nullptr;
@@ -138,10 +150,6 @@ const string &SmallShell::getLWD() {
 
 void SmallShell::changeLWD(const string &new_lwd) {
     last_working_dir = new_lwd;
-}
-
-JobsList &SmallShell::getJobsList() {
-    return jobs_list;
 }
 
 /********************

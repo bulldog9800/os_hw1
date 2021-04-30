@@ -206,7 +206,6 @@ class SmallShell {
   void changePrompt(const string& new_prompt);
   const string& getLWD();
   void changeLWD(const string& new_lwd);
-  JobsList& getJobsList();
 
   // TODO: add extra methods as needed
 };
