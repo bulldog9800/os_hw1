@@ -122,6 +122,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   else if (firstWord.compare("fg") == 0) {
       return new ForegroundCommand(cmd_line);
   }
+  else if (firstWord.compare("quit") == 0) {
+      return new QuitCommand(cmd_line);
+  }
   else{
       return new ExternalCommand(cmd_line);
   }
@@ -340,6 +343,7 @@ void ExternalCommand::execute() {
             waitpid(pid, nullptr, WNOHANG);
         }
         else {
+            smash.pid_in_fg = pid;
             waitpid(pid, nullptr, WUNTRACED);
         }
     }
@@ -583,6 +587,7 @@ void ForegroundCommand::execute() {
           }
       }
       int status;
+      smash.pid_in_fg=our_job->process_id ;
       if(waitpid(our_job->process_id,&status,WUNTRACED)==-1){
           perror("smash error: waitpid failed");
           return;
@@ -708,22 +713,24 @@ QuitCommand::~QuitCommand() {
 }
 void QuitCommand::execute() {
     SmallShell& smash = SmallShell::getInstance();
-    smash.jobs_list->removeFinishedJobs() ;
-    if (strcmp(args[1],"kill")==0){
-        cout <<"sending SIGKILL signal to "<<smash.jobs_list->jobs.size()<<" jobs:"<< endl ;
-        for (int i = 0; i <smash.jobs_list->jobs.size() ; i++) {
-            cout <<smash.jobs_list->jobs[i]->process_id<<": "<<smash.jobs_list->jobs[i]->command<<endl;
+    smash.jobs_list.removeFinishedJobs() ;
+    if (num_of_args > 1) {
+        if (strcmp(args[1], "kill") == 0) {
+            cout << "sending SIGKILL signal to " << smash.jobs_list.jobs.size() << " jobs:" << endl;
+            for (int i = 0; i < smash.jobs_list.jobs.size(); i++) {
+                cout << smash.jobs_list.jobs[i]->process_id << ": " << smash.jobs_list.jobs[i]->command << endl;
 
-        }
-        for (int i=0 ;i<smash.jobs_list->jobs.size();i++){
-            if(kill(smash.jobs_list->jobs[i]->process_id,SIGKILL)==-1){
-                perror("smash error: kill failed");
-                return;
             }
+            for (int i = 0; i < smash.jobs_list.jobs.size(); i++) {
+                if (kill(smash.jobs_list.jobs[i]->process_id, SIGKILL) == -1) {
+                    perror("smash error: kill failed");
+                    return;
+                }
+            }
+
+            exit(0);
+
         }
-
-        exit(0);
-
     }
 
     else{

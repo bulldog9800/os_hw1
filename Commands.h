@@ -105,6 +105,7 @@ class JobsList;
 class QuitCommand : public BuiltInCommand {
     char** args;
     int num_of_args;
+public:
   QuitCommand(const char* cmd_line);
   virtual ~QuitCommand() ;
   void execute() override;
@@ -189,9 +190,11 @@ class SmallShell {
  private:
   string prompt;
   string last_working_dir;
+
   SmallShell();
 
  public:
+    pid_t pid_in_fg;
   static JobsList jobs_list;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor

@@ -10,7 +10,9 @@ void ctrlZHandler(int sig_num) {
 }
 
 void ctrlCHandler(int sig_num) {
-  // TODO: Add your implementation
+    std::cout << "smash: got ctrl-C" << std::endl;
+    if ()
+
 }
 
 void alarmHandler(int sig_num) {
