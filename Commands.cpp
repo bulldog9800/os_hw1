@@ -10,6 +10,7 @@
 
 using namespace std;
 
+JobsList SmallShell::jobs_list;
 
 #if 0
 #define FUNC_ENTRY()  \
@@ -406,7 +407,7 @@ JobEntry * JobsList::getLastStoppedJob(int *jobId) {
 
 void JobsList::removeFinishedJobs() {
     for(int i=0 ;i<jobs.size();i++){
-        int res=waitpid(jobs[i]->process_id,NULL,WNOHANG) ;
+        int res=waitpid(jobs[i]->process_id,NULL,WNOHANG);
         if (res==-1){
             perror("smash error: waitpid failed");
         }
@@ -438,10 +439,10 @@ void JobsList::printJobsList() {
     removeFinishedJobs() ;
     for(int i=0;i<jobs.size();i++){
         if(jobs[i]->is_stopped){
-            cout<< jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->start_time)<<"(stopped)"<< endl ;
+            cout<< "[" << jobs[i]->job_id<<"] "<<jobs[i]->command<<" : "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->start_time)<< " secs (stopped)" << endl ;
         }
         else {
-            cout << jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->start_time)<<endl ;
+            cout<< "[" << jobs[i]->job_id<<"] "<<jobs[i]->command<<" : "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->start_time)<< " secs" << endl ;
         }
     }
 }
@@ -450,7 +451,13 @@ void JobsList::printJobsList() {
 
 void JobsList::addJob(Command *cmd, pid_t pid, bool isStopped) {
     removeFinishedJobs();
-    int next_job_id = jobs[jobs.size()-1]->job_id + 1;
+    int next_job_id;
+    if (jobs.empty()){
+        next_job_id = 1;
+    }
+    else{
+        next_job_id = jobs[jobs.size()-1]->job_id + 1;
+    }
     bool is_bg = ((ExternalCommand*)cmd)->is_bg;
     time_t start_time = time(nullptr);
     if(start_time == -1){
