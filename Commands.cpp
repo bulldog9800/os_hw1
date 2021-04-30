@@ -434,10 +434,10 @@ void JobsList::printJobsList() {
     removeFinishedJobs() ;
     for(int i=0;i<jobs.size();i++){
         if(jobs[i]->is_stopped){
-            cout<< jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->time)<<"(stopped)"<< endl ;
+            cout<< jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->start_time)<<"(stopped)"<< endl ;
         }
         else {
-            cout << jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->time)<<endl ;
+            cout << jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->start_time)<<endl ;
         }
     }
 }
