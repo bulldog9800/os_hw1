@@ -10,6 +10,8 @@
 
 using namespace std;
 
+JobsList SmallShell::jobs_list;
+
 #if 0
 #define FUNC_ENTRY()  \
   cout << __PRETTY_FUNCTION__ << " --> " << endl;
@@ -83,7 +85,7 @@ SmallShell::SmallShell(): prompt("smash> "), last_working_dir("") {
 }
 
 SmallShell::~SmallShell() {
-// TODO: add your implementation
+
 }
 
 /**
@@ -110,6 +112,18 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   }
   else if (firstWord.compare("cd") == 0) {
       return new ChangeDirCommand(cmd_line);
+  }
+  else if (firstWord.compare("jobs") == 0) {
+      return new JobsCommand(cmd_line);
+  }
+  else if (firstWord.compare("bg") == 0) {
+      return new BackgroundCommand(cmd_line);
+  }
+  else if (firstWord.compare("fg") == 0) {
+      return new ForegroundCommand(cmd_line);
+  }
+  else{
+      return new ExternalCommand(cmd_line);
   }
 
 
@@ -138,10 +152,6 @@ const string &SmallShell::getLWD() {
 
 void SmallShell::changeLWD(const string &new_lwd) {
     last_working_dir = new_lwd;
-}
-
-JobsList &SmallShell::getJobsList() {
-    return jobs_list;
 }
 
 /********************
@@ -316,14 +326,17 @@ void ExternalCommand::execute() {
     }
     if(pid==0){
         char* exec_args[4]={"bash","-c",command,NULL} ;
-        setpgrp();
-        perror("smash error: setgrp failed");
-        execv("/bin/bash",exec_args) ;
-        perror("smash error: execv failed") ;
+        if(setpgrp()==-1) {
+            perror("smash error: setgrp failed");
+        }
+        execv("/bin/bash",exec_args);
+        perror("smash error: execv failed");
+
         return;
     }
     else {
         if (is_bg){
+            SmallShell::jobs_list.addJob(this, pid);
             waitpid(pid, nullptr, WNOHANG);
         }
         else {
@@ -394,7 +407,7 @@ JobEntry * JobsList::getLastStoppedJob(int *jobId) {
 
 void JobsList::removeFinishedJobs() {
     for(int i=0 ;i<jobs.size();i++){
-        int res=waitpid(jobs[i]->process_id,NULL,WNOHANG) ;
+        int res=waitpid(jobs[i]->process_id,NULL,WNOHANG);
         if (res==-1){
             perror("smash error: waitpid failed");
         }
@@ -426,10 +439,10 @@ void JobsList::printJobsList() {
     removeFinishedJobs() ;
     for(int i=0;i<jobs.size();i++){
         if(jobs[i]->is_stopped){
-            cout<< jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->time)<<"(stopped)"<< endl ;
+            cout<< "[" << jobs[i]->job_id<<"] "<<jobs[i]->command<<" : "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->start_time)<< " secs (stopped)" << endl ;
         }
         else {
-            cout << jobs[i]->job_id<<" "<<jobs[i]->command<<" "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->time)<<endl ;
+            cout<< "[" << jobs[i]->job_id<<"] "<<jobs[i]->command<<" : "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->start_time)<< " secs" << endl ;
         }
     }
 }
@@ -438,7 +451,13 @@ void JobsList::printJobsList() {
 
 void JobsList::addJob(Command *cmd, pid_t pid, bool isStopped) {
     removeFinishedJobs();
-    int next_job_id = jobs[jobs.size()-1]->job_id + 1;
+    int next_job_id;
+    if (jobs.empty()){
+        next_job_id = 1;
+    }
+    else{
+        next_job_id = jobs[jobs.size()-1]->job_id + 1;
+    }
     bool is_bg = ((ExternalCommand*)cmd)->is_bg;
     time_t start_time = time(nullptr);
     if(start_time == -1){
@@ -456,7 +475,7 @@ void JobsList::addJob(Command *cmd, pid_t pid, bool isStopped) {
 JobsCommand::JobsCommand(const char *cmd_line) : BuiltInCommand(cmd_line) {}
 void JobsCommand::execute() {
     SmallShell& smash = SmallShell::getInstance();
-    smash.jobs_list->printJobsList();
+    smash.jobs_list.printJobsList();
 }
 
 /***************
@@ -504,7 +523,7 @@ void KillCommand::execute() {
     string signal_str = string(args[1]);
     signal_str.erase(signal_str.begin());
     int sig = stoi(signal_str);
-    JobEntry* our_job =smash.jobs_list->getJobById(job_id);
+    JobEntry* our_job =smash.jobs_list.getJobById(job_id);
     if(our_job== nullptr){
         std::cerr <<"smash error: kill: job-id " << job_id << " does not exist" << std::endl ;
         return;
@@ -539,7 +558,7 @@ ForegroundCommand::~ForegroundCommand()   {
 
 void ForegroundCommand::execute() {
     SmallShell& smash = SmallShell::getInstance();
-    smash.jobs_list->removeFinishedJobs();
+    smash.jobs_list.removeFinishedJobs();
     if(num_of_args>2){
         std::cerr<<"smash error: fg: invalid arguments"<<endl;
         return;
@@ -547,12 +566,12 @@ void ForegroundCommand::execute() {
 
     ///no_args
     if (num_of_args==1){
-       if(smash.jobs_list->jobs.empty()) {
+       if(smash.jobs_list.jobs.empty()) {
            std::cerr<<"smash error: fg: jobs list is empty" <<endl ;
            return;
        }
        int* job_id ;
-      JobEntry* our_job = smash.jobs_list->getLastJob(job_id);
+      JobEntry* our_job = smash.jobs_list.getLastJob(job_id);
       cout << our_job->command << " : " << our_job->process_id;
        if(kill(our_job->process_id,SIGCONT)==-1){
            perror("smash error: kill failed");
@@ -571,7 +590,7 @@ void ForegroundCommand::execute() {
 
         }
         int job_id = atoi(args[1]);
-       JobEntry* our_job = smash.jobs_list->getJobById(job_id);
+       JobEntry* our_job = smash.jobs_list.getJobById(job_id);
         if(our_job== nullptr){
             cerr<<"smash error: fg: job-id "<<job_id<<" does not exist"<<endl;
             return;
@@ -621,11 +640,11 @@ void BackgroundCommand::execute() {
     /// No args
     if (num_of_args==1){
         int* job_id;
-        if(smash.jobs_list->getLastStoppedJob(job_id) == nullptr) {
+        if(smash.jobs_list.getLastStoppedJob(job_id) == nullptr) {
             std::cerr<<"smash error: bg: there is no stopped jobs to resume" <<endl ;
             return;
         }
-        JobEntry* our_job = smash.jobs_list->getLastJob(job_id);
+        JobEntry* our_job = smash.jobs_list.getLastJob(job_id);
         cout << our_job->command << " : " << our_job->process_id;
         if(kill(our_job->process_id,SIGCONT)==-1){
             perror("smash error: kill failed");
@@ -640,7 +659,7 @@ void BackgroundCommand::execute() {
             return;
         }
         int job_id = atoi(args[1]);
-        JobEntry* our_job = smash.jobs_list->getJobById(job_id);
+        JobEntry* our_job = smash.jobs_list.getJobById(job_id);
         if(our_job== nullptr){
             cerr<<" smash error: fg: job-id " << job_id << "does not exist" << endl;
             return;
