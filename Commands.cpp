@@ -7,6 +7,10 @@
 #include <iomanip>
 #include "Commands.h"
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 using namespace std;
 
@@ -96,6 +100,10 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   string cmd_s = _trim(string(cmd_line));
   string firstWord = cmd_s.substr(0, cmd_s.find_first_of(" \n"));
 
+  if(cmd_s.find('>') != string::npos ){
+      return new RedirectionCommand(cmd_line);
+  }
+
   // If first word contains & sign, remove it so we can compare it properly.
   if(firstWord[firstWord.size()-1]=='&'){
       firstWord.pop_back();
@@ -121,6 +129,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   }
   else if (firstWord.compare("fg") == 0) {
       return new ForegroundCommand(cmd_line);
+  }
+  else if (firstWord.compare("kill") == 0) {
+      return new KillCommand(cmd_line);
   }
   else if (firstWord.compare("quit") == 0) {
       return new QuitCommand(cmd_line);
@@ -340,11 +351,14 @@ void ExternalCommand::execute() {
     else {
         if (is_bg){
             SmallShell::jobs_list.addJob(this, pid);
-            waitpid(pid, nullptr, WNOHANG);
+             waitpid(pid, nullptr, WNOHANG);
         }
         else {
             smash.pid_in_fg = pid;
+            smash.command_in_fg=this ;
             waitpid(pid, nullptr, WUNTRACED);
+            smash.pid_in_fg = 0;
+            smash.command_in_fg = nullptr;
         }
     }
 
@@ -365,9 +379,9 @@ bool JobEntry::operator==(const JobEntry& j) const{
     return this->job_id== j.job_id ;
 }
 
-JobEntry::JobEntry(int job_id, int pid, bool is_bg, bool is_stopped, string& command, time_t start):
+JobEntry::JobEntry(int job_id, int pid, bool is_bg, bool is_stopped, string& command, time_t start, Command* command_obj):
         job_id(job_id), process_id(pid), is_bg(is_bg), is_stopped(is_stopped), command(command),
-        start_time(start){
+        start_time(start), command_obj(command_obj){
 
 }
 
@@ -414,16 +428,16 @@ JobEntry * JobsList::getLastStoppedJob(int *jobId) {
 void JobsList::removeFinishedJobs() {
     for(int i=0 ;i<jobs.size();i++){
         int status;
-        int res=waitpid(jobs[i]->process_id, &status,WNOHANG);
+        int res = waitpid(jobs[i]->process_id, &status,WNOHANG | WUNTRACED | WCONTINUED);
         if (res==-1){
             perror("smash error: waitpid failed");
+            return;
         }
-        if(res>0){
-
+        if(res > 0 && !jobs[i]->is_stopped && !WIFCONTINUED(status)){
             JobEntry* temp = jobs[i];
+            cout << "Removing job: " << temp->job_id << endl;
             jobs.erase(jobs.begin()+i);
             delete temp;
-
         }
     }
 }
@@ -471,9 +485,17 @@ void JobsList::addJob(Command *cmd, pid_t pid, bool isStopped) {
         perror("smash error: time failed");
     }
     string command = string(cmd->getCommand());
-    auto* job_entry = new JobEntry(next_job_id, pid, is_bg, isStopped, command, start_time);
+    auto* job_entry = new JobEntry(next_job_id, pid, is_bg, isStopped, command, start_time, cmd);
 
     jobs.push_back(job_entry);
+}
+
+JobEntry *JobsList::getJobByPid(int pid) {
+    for (int i=0;i<jobs.size();i++){
+        if (jobs[i]->process_id==pid)
+            return jobs[i];
+    }
+    return nullptr ;
 }
 
 /***************************
@@ -535,7 +557,7 @@ void KillCommand::execute() {
         std::cerr <<"smash error: kill: job-id " << job_id << " does not exist" << std::endl ;
         return;
     }
-    if(killpg(our_job->process_id, sig) < 0) {
+    if(kill(our_job->process_id, sig) < 0) {
         perror("smash error: killpg failed");
         return;
     }
@@ -543,6 +565,10 @@ void KillCommand::execute() {
     if(sig==SIGCONT){
         our_job->is_stopped= false ;
         our_job->is_bg= true ;
+    }
+    if(sig == SIGSTOP){
+        our_job->is_stopped= true ;
+        our_job->is_bg= false ;
     }
 
 }
@@ -588,13 +614,13 @@ void ForegroundCommand::execute() {
       }
       int status;
       smash.pid_in_fg=our_job->process_id ;
+      smash.command_in_fg = our_job->command_obj;
       if(waitpid(our_job->process_id,&status,WUNTRACED)==-1){
           perror("smash error: waitpid failed");
           return;
       }
-      if (WIFEXITED(status)){
-          smash.jobs_list.jobs.pop_back();
-      }
+
+      smash.pid_in_fg = 0;
     }
     ////with_args
     else {
@@ -618,14 +644,13 @@ void ForegroundCommand::execute() {
                 }
             }
             int status;
+            smash.pid_in_fg = our_job->process_id;
+            smash.command_in_fg = our_job->command_obj;
             if (waitpid(our_job->process_id, &status, WUNTRACED) == -1) {
                 perror("smash error: waitpid failed");
                 return;
             }
-            if (WIFEXITED(status)){
-                smash.jobs_list.removeJobById(our_job->job_id);
-            }
-
+            smash.pid_in_fg = 0;
         }
     }
 
@@ -661,17 +686,20 @@ void BackgroundCommand::execute() {
 
     /// No args
     if (num_of_args==1){
-        int* job_id;
-        if(smash.jobs_list.getLastStoppedJob(job_id) == nullptr) {
+        int job_id;
+        if(smash.jobs_list.getLastStoppedJob(&job_id) == nullptr) {
             std::cerr<<"smash error: bg: there is no stopped jobs to resume" <<endl ;
             return;
         }
-        JobEntry* our_job = smash.jobs_list.getLastJob(job_id);
-        cout << our_job->command << " : " << our_job->process_id;
+        JobEntry* our_job = smash.jobs_list.getLastStoppedJob(&job_id);
+        cout << our_job->command << " : " << our_job->process_id << endl;
         if(kill(our_job->process_id,SIGCONT)==-1){
             perror("smash error: kill failed");
             return;
         }
+        our_job->is_stopped = false;
+        our_job->is_bg = true;
+        return;
     }
 
     /// With args
@@ -691,6 +719,8 @@ void BackgroundCommand::execute() {
             perror("smash error: kill failed");
             return;
         }
+        our_job->is_stopped = false;
+        our_job->is_bg = true;
     }
 }
 
@@ -737,4 +767,63 @@ void QuitCommand::execute() {
         exit(0);
     }
 
+}
+
+/************************************
+ *
+ *       REDIRECTION COMMAND
+ *
+ ************************************/
+
+RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line), new_cmd(nullptr) {
+    args = new char*[20];
+    char* line = new char[strlen(cmd_line)+1];
+    strcpy(line, cmd_line);
+    _removeBackgroundSign(line);
+    num_of_args = _parseCommandLine(line, args);
+    delete[] line;
+
+    for (int i=0; i<num_of_args; i++){
+        if(strcmp(args[i],">")==0){
+            stdout_location = dup(1);
+            if (stdout_location == -1){
+                perror("smash error: dup failed");
+                return;
+            }
+            if(close(1)==-1){
+                perror("smash error: close failed");
+                return;
+            }
+            int fd = open(args[i+1], O_CREAT | O_WRONLY);
+            if (fd == -1){
+                perror("smash error: open failed");
+                return;
+            }
+            string new_command = string(args[0]);
+            for(int j=1; j<i; j++){
+                new_command += " " + string(args[j]);
+            }
+            SmallShell& smash = SmallShell::getInstance();
+            new_cmd = smash.CreateCommand(new_command.c_str());
+        }
+    }
+}
+
+void RedirectionCommand::execute() {
+    if(new_cmd== nullptr){
+        if (dup2(stdout_location, 1)==-1){
+            perror("smash error: dup2 failed");
+            return;
+        }
+        return;
+    }
+    new_cmd->execute();
+    if (close(1) == -1) {
+        perror("smash error: close failed");
+        return;
+    }
+    if (dup2(stdout_location, 1)==-1){
+        perror("smash error: dup2 failed");
+        return;
+    }
 }

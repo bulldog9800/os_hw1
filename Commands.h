@@ -59,7 +59,10 @@ class PipeCommand : public Command {
 };
 
 class RedirectionCommand : public Command {
- // TODO: Add your data members
+    char **args;
+    int num_of_args;
+    Command* new_cmd;
+    int stdout_location;
  public:
   explicit RedirectionCommand(const char* cmd_line);
   virtual ~RedirectionCommand() {}
@@ -120,8 +123,9 @@ public:
     bool is_stopped;
     string command;
     time_t start_time;
+    Command* command_obj;
     bool operator==(const JobEntry& j) const;
-    JobEntry(int job_id, int pid, bool is_bg, bool is_stopped, string& command, time_t start);
+    JobEntry(int job_id, int pid, bool is_bg, bool is_stopped, string& command, time_t start, Command* command_obj);
 };
 
 class JobsList {
@@ -136,6 +140,7 @@ class JobsList {
   void killAllJobs();
   void removeFinishedJobs();
   JobEntry * getJobById(int jobId);
+  JobEntry * getJobByPid(int pid);
   void removeJobById(int jobId);
   JobEntry * getLastJob(int* lastJobId);
   JobEntry *getLastStoppedJob(int *jobId);
@@ -186,6 +191,8 @@ class CatCommand : public BuiltInCommand {
 };
 
 
+
+
 class SmallShell {
  private:
   string prompt;
@@ -195,6 +202,7 @@ class SmallShell {
 
  public:
     pid_t pid_in_fg;
+    Command* command_in_fg ;
   static JobsList jobs_list;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
