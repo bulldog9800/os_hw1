@@ -51,7 +51,9 @@ class ExternalCommand : public Command {
 
 
 class PipeCommand : public Command {
-  // TODO: Add your data members
+  string first_command ;
+  string second_command;
+  bool stderr_flag ;
  public:
   PipeCommand(const char* cmd_line);
   virtual ~PipeCommand() {}

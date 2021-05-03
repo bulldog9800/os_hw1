@@ -827,3 +827,31 @@ void RedirectionCommand::execute() {
         return;
     }
 }
+
+/************************************
+ *
+ *       REDIRECTION COMMAND
+ *
+ ************************************/
+
+PipeCommand::PipeCommand(const char* cmd_line): Command(cmd_line){
+    string cmd_s = _trim(string(cmd_line));
+    int position =cmd_s.find_last_not_of('|');
+    if(cmd_s[position+1]=='&'){
+        second_command=cmd_s.substr(position+2,cmd_s.size());
+        stderr_flag=true ;
+    }
+    else{
+        second_command=cmd_s.substr(position+1,cmd_s.size());
+        stderr_flag=false ;
+    }
+    first_command=cmd_s.substr(0,position);
+    first_command= _trim(first_command);
+    second_command= _trim(second_command);
+    _removeBackgroundSign((char*)first_command.c_str());
+    _removeBackgroundSign((char*)second_command.c_str());
+
+}
+void PipeCommand::execute() {
+
+}
