@@ -63,8 +63,9 @@ class PipeCommand : public Command {
 };
 
 class RedirectionCommand : public Command {
-    char **args;
-    int num_of_args;
+    string command;
+    string file_path;
+    bool is_append;
     Command* new_cmd;
     int stdout_location;
  public:

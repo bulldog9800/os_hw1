@@ -103,6 +103,9 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
   if(cmd_s.find('>') != string::npos ){
       return new RedirectionCommand(cmd_line);
   }
+  if(cmd_s.find('|') != string::npos ){
+      return new PipeCommand(cmd_line);
+  }
 
   // If first word contains & sign, remove it so we can compare it properly.
   if(firstWord[firstWord.size()-1]=='&'){
@@ -321,8 +324,12 @@ void ChangeDirCommand::execute() {
 ExternalCommand::ExternalCommand(const char *cmd_line) : Command(cmd_line),is_bg(false){
     is_bg= _isBackgroundComamnd(cmd_line);
     char* line =new char[strlen(cmd_line+1)];
-            strcpy (line,cmd_line);
-            _removeBackgroundSign(line);
+    strcpy (line,cmd_line);
+    if (string(line).empty()) {
+        command = (char *) string().c_str();
+        return;
+    }
+    _removeBackgroundSign(line);
     args = new char*[20];
     num_of_args = _parseCommandLine(line, args);
     command =new char[strlen(cmd_line)+1];
@@ -430,7 +437,7 @@ void JobsList::removeFinishedJobs() {
         int status;
         int res = waitpid(jobs[i]->process_id, &status,WNOHANG | WUNTRACED | WCONTINUED);
         if (res==-1){
-            perror("smash error: waitpid failed");
+            perror("smash error: Here waitpid failed");
             return;
         }
         if(res > 0 && !jobs[i]->is_stopped && !WIFCONTINUED(status)){
@@ -776,59 +783,49 @@ void QuitCommand::execute() {
  ************************************/
 
 RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line), new_cmd(nullptr) {
-    args = new char*[20];
-    char* line = new char[strlen(cmd_line)+1];
-    strcpy(line, cmd_line);
-    _removeBackgroundSign(line);
-    num_of_args = _parseCommandLine(line, args);
-    delete[] line;
+    string cmd_s = _trim(string(cmd_line));
+    int position = (int)cmd_s.find('>');
+    if (cmd_s[position+1] == '>'){
+        is_append = true;
+        file_path = cmd_s.substr(position+2, cmd_s.size());
+    }
+    else{
+        is_append = false;
+        file_path = cmd_s.substr(position+1, cmd_s.size());
+    }
+    command = cmd_s.substr(0, position);
+    command = _trim(command);
+    file_path = _trim(file_path);
+    _removeBackgroundSign((char *)command.c_str());
+    _removeBackgroundSign((char *)file_path.c_str());
 
-    for (int i=0; i<num_of_args; i++){
-        if(strcmp(args[i],">>")==0){
-            stdout_location = dup(1);
-            if (stdout_location == -1){
-                perror("smash error: dup failed");
-                return;
-            }
-            if(close(1)==-1){
-                perror("smash error: close failed");
-                return;
-            }
-            int fd = open(args[i+1], O_CREAT | O_RDWR | O_APPEND);
-            if (fd == -1){
-                perror("smash error: open failed");
-                return;
-            }
-            string new_command = string(args[0]);
-            for(int j=1; j<i; j++){
-                new_command += " " + string(args[j]);
-            }
-            SmallShell& smash = SmallShell::getInstance();
-            new_cmd = smash.CreateCommand(new_command.c_str());
-        }
-        if(strcmp(args[i],">")==0){
-            stdout_location = dup(1);
-            if (stdout_location == -1){
-                perror("smash error: dup failed");
-                return;
-            }
-            if(close(1)==-1){
-                perror("smash error: close failed");
-                return;
-            }
-            int fd = open(args[i+1], O_CREAT | O_RDWR);
-            if (fd == -1){
-                perror("smash error: open failed");
-                return;
-            }
-            string new_command = string(args[0]);
-            for(int j=1; j<i; j++){
-                new_command += " " + string(args[j]);
-            }
-            SmallShell& smash = SmallShell::getInstance();
-            new_cmd = smash.CreateCommand(new_command.c_str());
+
+    stdout_location = dup(1);
+    if (stdout_location == -1) {
+        perror("smash error: dup failed");
+        return;
+    }
+    if (close(1) == -1) {
+        perror("smash error: close failed");
+        return;
+    }
+    int fd;
+    if (is_append){
+        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_APPEND);
+        if (fd == -1) {
+            perror("smash error: open failed");
+            return;
         }
     }
+    else {
+        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC);
+        if (fd == -1) {
+            perror("smash error: open failed");
+            return;
+        }
+    }
+    SmallShell &smash = SmallShell::getInstance();
+    new_cmd = smash.CreateCommand(command.c_str());
 }
 
 void RedirectionCommand::execute() {
@@ -858,7 +855,7 @@ void RedirectionCommand::execute() {
 
 PipeCommand::PipeCommand(const char* cmd_line): Command(cmd_line){
     string cmd_s = _trim(string(cmd_line));
-    int position =cmd_s.find_last_not_of('|');
+    int position = cmd_s.find('|');
     if(cmd_s[position+1]=='&'){
         second_command_str=cmd_s.substr(position + 2, cmd_s.size());
         stderr_flag=true ;
@@ -881,7 +878,7 @@ PipeCommand::PipeCommand(const char* cmd_line): Command(cmd_line){
 void PipeCommand::execute() {
     int swap = 0;
     if (stderr_flag){
-        swap = 3;
+        swap = 2;
     }
     else{
         swap = 1;
@@ -898,6 +895,9 @@ void PipeCommand::execute() {
     }
     if (pid1 == 0) {
         // first child
+        if(setpgrp()==-1) {
+            perror("smash error: setgrp failed");
+        }
         if (dup2(fd[1], swap)==-1){
             perror("smash error: dup2 failed");
             return;
@@ -911,6 +911,7 @@ void PipeCommand::execute() {
             return;
         }
         first_command->execute();
+        exit(0);
     }
     pid_t pid2 = fork();
     if (pid2==-1) {
@@ -919,6 +920,9 @@ void PipeCommand::execute() {
     }
     if (pid2 == 0) {
         // second child
+        if(setpgrp()==-1) {
+            perror("smash error: setgrp failed");
+        }
         if (dup2(fd[0], 0)==-1){
             perror("smash error: dup2 failed");
             return;
@@ -932,6 +936,7 @@ void PipeCommand::execute() {
             return;
         }
         second_command->execute();
+        exit(0);
     }
     if (close(fd[0])==-1){
         perror("smash error: close failed");
@@ -941,6 +946,15 @@ void PipeCommand::execute() {
         perror("smash error: close failed");
         return;
     }
-
+    /*
+    if(waitpid(pid1, nullptr, WUNTRACED)==-1){
+        perror("smash error: waitpid failed");
+        return;
+    }
+    if(waitpid(pid2, nullptr, WUNTRACED)==-1){
+        perror("smash error: waitpid failed");
+        return;
+    }
+     */
 
 }
