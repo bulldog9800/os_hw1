@@ -852,7 +852,7 @@ void RedirectionCommand::execute() {
 
 /************************************
  *
- *       REDIRECTION COMMAND
+ *       PIPE COMMAND
  *
  ************************************/
 
@@ -860,20 +860,87 @@ PipeCommand::PipeCommand(const char* cmd_line): Command(cmd_line){
     string cmd_s = _trim(string(cmd_line));
     int position =cmd_s.find_last_not_of('|');
     if(cmd_s[position+1]=='&'){
-        second_command=cmd_s.substr(position+2,cmd_s.size());
+        second_command_str=cmd_s.substr(position + 2, cmd_s.size());
         stderr_flag=true ;
     }
     else{
-        second_command=cmd_s.substr(position+1,cmd_s.size());
+        second_command_str=cmd_s.substr(position + 1, cmd_s.size());
         stderr_flag=false ;
     }
-    first_command=cmd_s.substr(0,position);
-    first_command= _trim(first_command);
-    second_command= _trim(second_command);
-    _removeBackgroundSign((char*)first_command.c_str());
-    _removeBackgroundSign((char*)second_command.c_str());
+    first_command_str=cmd_s.substr(0, position);
+    first_command_str= _trim(first_command_str);
+    second_command_str= _trim(second_command_str);
+    _removeBackgroundSign((char*)first_command_str.c_str());
+    _removeBackgroundSign((char*)second_command_str.c_str());
 
+    SmallShell& smash = SmallShell::getInstance();
+    first_command = smash.CreateCommand(first_command_str.c_str());
+    second_command = smash.CreateCommand(second_command_str.c_str());
 }
+
 void PipeCommand::execute() {
+    int swap = 0;
+    if (stderr_flag){
+        swap = 3;
+    }
+    else{
+        swap = 1;
+    }
+    int fd[2];
+    if(pipe(fd)==-1){
+        perror("smash error: pipe failed");
+        return;
+    }
+    pid_t pid1 = fork();
+    if (pid1 == -1){
+        perror("smash error: fork failed");
+        return;
+    }
+    if (pid1 == 0) {
+        // first child
+        if (dup2(fd[1], swap)==-1){
+            perror("smash error: dup2 failed");
+            return;
+        }
+        if (close(fd[0])==-1){
+            perror("smash error: close failed");
+            return;
+        }
+        if (close(fd[1])==-1) {
+            perror("smash error: close failed");
+            return;
+        }
+        first_command->execute();
+    }
+    pid_t pid2 = fork();
+    if (pid2==-1) {
+        perror("smash error: fork failed");
+        return;
+    }
+    if (pid2 == 0) {
+        // second child
+        if (dup2(fd[0], 0)==-1){
+            perror("smash error: dup2 failed");
+            return;
+        }
+        if (close(fd[0]) == -1) {
+            perror("smash error: close failed");
+            return;
+        }
+        if (close(fd[1])==-1) {
+            perror("smash error: close failed");
+            return;
+        }
+        second_command->execute();
+    }
+    if (close(fd[0])==-1){
+        perror("smash error: close failed");
+        return;
+    }
+    if (close(fd[1])==-1){
+        perror("smash error: close failed");
+        return;
+    }
+
 
 }

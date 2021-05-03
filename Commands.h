@@ -51,9 +51,11 @@ class ExternalCommand : public Command {
 
 
 class PipeCommand : public Command {
-  string first_command ;
-  string second_command;
+  string first_command_str ;
+  string second_command_str;
   bool stderr_flag ;
+  Command* first_command;
+  Command* second_command;
  public:
   PipeCommand(const char* cmd_line);
   virtual ~PipeCommand() {}
