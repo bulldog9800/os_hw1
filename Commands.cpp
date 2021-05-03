@@ -435,7 +435,7 @@ void JobsList::removeFinishedJobs() {
         }
         if(res > 0 && !jobs[i]->is_stopped && !WIFCONTINUED(status)){
             JobEntry* temp = jobs[i];
-            cout << "Removing job: " << temp->job_id << endl;
+            // cout << "Removing job: " << temp->job_id << endl;
             jobs.erase(jobs.begin()+i);
             delete temp;
         }
@@ -784,6 +784,28 @@ RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line)
     delete[] line;
 
     for (int i=0; i<num_of_args; i++){
+        if(strcmp(args[i],">>")==0){
+            stdout_location = dup(1);
+            if (stdout_location == -1){
+                perror("smash error: dup failed");
+                return;
+            }
+            if(close(1)==-1){
+                perror("smash error: close failed");
+                return;
+            }
+            int fd = open(args[i+1], O_CREAT | O_RDWR | O_APPEND);
+            if (fd == -1){
+                perror("smash error: open failed");
+                return;
+            }
+            string new_command = string(args[0]);
+            for(int j=1; j<i; j++){
+                new_command += " " + string(args[j]);
+            }
+            SmallShell& smash = SmallShell::getInstance();
+            new_cmd = smash.CreateCommand(new_command.c_str());
+        }
         if(strcmp(args[i],">")==0){
             stdout_location = dup(1);
             if (stdout_location == -1){
@@ -794,7 +816,7 @@ RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line)
                 perror("smash error: close failed");
                 return;
             }
-            int fd = open(args[i+1], O_CREAT | O_WRONLY);
+            int fd = open(args[i+1], O_CREAT | O_RDWR);
             if (fd == -1){
                 perror("smash error: open failed");
                 return;
