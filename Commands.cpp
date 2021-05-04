@@ -545,21 +545,28 @@ void KillCommand::execute() {
         std::cerr << "smash error: kill: invalid arguments" << endl ;
         return;
     }
+
+
     if (args[1][0]!='-'){
         std::cerr << "smash error: kill: invalid arguments" << endl ;
         return;
     }
+
     for (int i=1;i< strlen(args[1]);i++){
         if (!isdigit(args[1][i])){
             std::cerr << "smash error: kill: invalid arguments" << endl ;
             return;
         }
-    }
 
+    }
+    int num_of_minos=0;
     for (int i=0;i< strlen(args[2]);i++){
-        if (!isdigit(args[2][i])){
+        if ((!isdigit(args[2][i]) && args[2][i] != '-')||num_of_minos>1){
             std::cerr << "smash error: kill: invalid arguments" << endl ;
             return;
+        }
+        if(args[1][i] == '-'){
+            num_of_minos++;
         }
 
     }
@@ -644,12 +651,17 @@ void ForegroundCommand::execute() {
     }
     ////with_args
     else {
-        for (int i = 0; i < strlen(args[1]); i++) {
-            if (!isdigit(args[1][i])) {
-                std::cerr << "smash error: fg: invalid arguments" << endl;
+        int num_of_minos=0;
+        for (int i=0;i< strlen(args[1]);i++){
+            if ((!isdigit(args[1][i]) && args[1][i] != '-')||num_of_minos>1){
+                std::cerr << "smash error: fg: invalid arguments" << endl ;
                 return;
-
             }
+            if(args[1][i] == '-'){
+                num_of_minos++;
+            }
+
+        }
             int job_id = atoi(args[1]);
             JobEntry *our_job = smash.jobs_list.getJobById(job_id);
             if (our_job == nullptr) {
@@ -674,7 +686,7 @@ void ForegroundCommand::execute() {
         }
     }
 
-}
+
 
 
 
@@ -723,11 +735,17 @@ void BackgroundCommand::execute() {
     }
 
     /// With args
-    for (int i = 0; i < strlen(args[1]); i++) {
-        if(!isdigit(args[1][i])){
-            std::cerr << "smash error: bg: invalid arguments" << endl;
+    int num_of_minos=0;
+    for (int i=0;i< strlen(args[1]);i++){
+        if ((!isdigit(args[1][i]) && args[1][i] != '-')||num_of_minos>1){
+            std::cerr << "smash error: fg: invalid arguments" << endl ;
             return;
         }
+        if(args[1][i] == '-'){
+            num_of_minos++;
+        }
+
+    }
         int job_id = atoi(args[1]);
         JobEntry* our_job = smash.jobs_list.getJobById(job_id);
         if(our_job== nullptr){
@@ -742,7 +760,7 @@ void BackgroundCommand::execute() {
         our_job->is_stopped = false;
         our_job->is_bg = true;
     }
-}
+
 
 
 /****************************
