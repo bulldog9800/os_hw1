@@ -984,15 +984,14 @@ void CatCommand::execute() {
         cerr <<"smash error: cat: not enough arguments"<<endl ;
     }
     for(int i=1;i<num_of_args;i++){
-        int f = open(args[i], O_RDONLY);
+        int f = open(args[i], O_RDONLY,0777);
         if(f==-1){
-            perror("smash error: close failed");
+            perror("smash error: open failed");
             return;
         }
-        while(f!=0){
-            char* buffer= new char[200];
-            int num_read=0;
-            num_read= (int)read(f,buffer,200);
+        char* buffer= new char[200];
+        int num_read=0;
+        while((num_read= read(f,buffer,200)) !=0){
             if(num_read==-1){
                 perror("smash error: read failed");
                 return;
