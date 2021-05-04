@@ -437,7 +437,8 @@ JobEntry * JobsList::getLastStoppedJob(int *jobId) {
 }
 
 void JobsList::removeFinishedJobs() {
-    for(int i=0 ;i<jobs.size();i++){
+    int i=0;
+    while(i<jobs.size()){
         int status;
         int res = waitpid(jobs[i]->process_id, &status,WNOHANG | WUNTRACED | WCONTINUED);
         if (res==-1){
@@ -449,6 +450,8 @@ void JobsList::removeFinishedJobs() {
             // cout << "Removing job: " << temp->job_id << endl;
             jobs.erase(jobs.begin()+i);
             delete temp;
+        } else {
+            i++;
         }
     }
 }
@@ -754,10 +757,10 @@ QuitCommand::~QuitCommand() {
 }
 void QuitCommand::execute() {
     SmallShell& smash = SmallShell::getInstance();
-    smash.jobs_list.removeFinishedJobs() ;
     if (num_of_args > 1) {
         if (strcmp(args[1], "kill") == 0) {
-            cout << "sending SIGKILL signal to " << smash.jobs_list.jobs.size() << " jobs:" << endl;
+            SmallShell::jobs_list.removeFinishedJobs();
+            cout << "smash: sending SIGKILL signal to " << smash.jobs_list.jobs.size() << " jobs:" << endl;
             for (int i = 0; i < smash.jobs_list.jobs.size(); i++) {
                 cout << smash.jobs_list.jobs[i]->process_id << ": " << smash.jobs_list.jobs[i]->command << endl;
 
@@ -770,7 +773,6 @@ void QuitCommand::execute() {
             }
 
             exit(0);
-
         }
     }
 
@@ -815,14 +817,14 @@ RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line)
     }
     int fd;
     if (is_append){
-        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_APPEND);
+        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_APPEND, 0666);
         if (fd == -1) {
             perror("smash error: open failed");
             return;
         }
     }
     else {
-        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC);
+        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
         if (fd == -1) {
             perror("smash error: open failed");
             return;
@@ -966,7 +968,7 @@ void PipeCommand::execute() {
 
 /************************************
 *
-*       cat COMMAND
+*       CAT COMMAND
 *
 ************************************/
 CatCommand::CatCommand(const char *cmd_line) : BuiltInCommand(cmd_line){
@@ -984,20 +986,20 @@ void CatCommand::execute() {
         cerr <<"smash error: cat: not enough arguments"<<endl ;
     }
     for(int i=1;i<num_of_args;i++){
-        int f = open(args[i], O_RDONLY,0777);
+        int f = open(args[i], O_RDONLY, 0777);
         if(f==-1){
             perror("smash error: open failed");
             return;
         }
         char* buffer= new char[200];
         int num_read=0;
-        while((num_read= read(f,buffer,200)) !=0){
+        while((num_read = read(f,buffer,200)) !=0){
             if(num_read==-1){
                 perror("smash error: read failed");
                 return;
             }
             int num_write=0;
-            while(num_write<num_read){
+            while(num_write < num_read){
                 num_write= (int)write(1,buffer,num_read);
                 if(num_write==-1){
                     perror("smash error: write failed");
