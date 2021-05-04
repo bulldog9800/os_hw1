@@ -189,6 +189,8 @@ class BackgroundCommand : public BuiltInCommand {
 
 
 class CatCommand : public BuiltInCommand {
+    char** args;
+    int num_of_args;
  public:
   CatCommand(const char* cmd_line);
   virtual ~CatCommand() {}

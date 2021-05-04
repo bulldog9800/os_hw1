@@ -112,9 +112,13 @@ Command * SmallShell::CreateCommand(const char* cmd_line) {
       firstWord.pop_back();
   }
 
+
   if (firstWord.compare("pwd") == 0) {
     return new GetCurrDirCommand(cmd_line);
   }
+  else if(firstWord.compare("cat")==0){
+        return new CatCommand(cmd_line);
+    }
   else if (firstWord.compare("showpid") == 0) {
     return new ShowPidCommand(cmd_line);
   }
@@ -855,7 +859,7 @@ void RedirectionCommand::execute() {
 
 PipeCommand::PipeCommand(const char* cmd_line): Command(cmd_line){
     string cmd_s = _trim(string(cmd_line));
-    int position = cmd_s.find('|');
+    int position =cmd_s.find_last_not_of('|');
     if(cmd_s[position+1]=='&'){
         second_command_str=cmd_s.substr(position + 2, cmd_s.size());
         stderr_flag=true ;
@@ -956,5 +960,56 @@ void PipeCommand::execute() {
         return;
     }
      */
+
+
+}
+
+/************************************
+*
+*       cat COMMAND
+*
+************************************/
+CatCommand::CatCommand(const char *cmd_line) : BuiltInCommand(cmd_line){
+    args = new char*[20];
+    char* line = new char[strlen(cmd_line)+1];
+    strcpy(line, cmd_line);
+    _removeBackgroundSign(line);
+    num_of_args = _parseCommandLine(line, args);
+    delete[] line;
+
+}
+
+void CatCommand::execute() {
+    if(num_of_args<2){
+        cerr <<"smash error: cat: not enough arguments"<<endl ;
+    }
+    for(int i=1;i<num_of_args;i++){
+        int f = open(args[i], O_RDONLY);
+        if(f==-1){
+            perror("smash error: close failed");
+            return;
+        }
+        while(f!=0){
+            char* buffer= new char[200];
+            int num_read=0;
+            num_read= (int)read(f,buffer,200);
+            if(num_read==-1){
+                perror("smash error: read failed");
+                return;
+            }
+            int num_write=0;
+            while(num_write<num_read){
+                num_write= (int)write(1,buffer,num_read);
+                if(num_write==-1){
+                    perror("smash error: write failed");
+                    return;
+                }
+            }
+        }
+        if(close(f)==-1){
+            perror("smash error: close failed");
+            return;
+        }
+    }
 
 }
