@@ -441,7 +441,8 @@ JobEntry * JobsList::getLastStoppedJob(int *jobId) {
 }
 
 void JobsList::removeFinishedJobs() {
-    for(int i=0 ;i<jobs.size();i++){
+    vector<int> to_be_removed;
+    for(int i=0 ;i<jobs.size(); i++){
         int status;
         int res = waitpid(jobs[i]->process_id, &status,WNOHANG | WUNTRACED | WCONTINUED);
         if (res==-1){
@@ -449,13 +450,11 @@ void JobsList::removeFinishedJobs() {
             return;
         }
         if(res > 0 && !jobs[i]->is_stopped && !WIFCONTINUED(status)){
-            JobEntry* temp = jobs[i];
-            // cout << "Removing job: " << temp->job_id << endl;
-            jobs.erase(jobs.begin()+i);
-            delete temp;
-        } else {
-            i++;
+            to_be_removed.push_back(jobs[i]->job_id);
         }
+    }
+    for (int i=0; i<to_be_removed.size(); i++){
+        removeJobById(to_be_removed[i]);
     }
 }
 
@@ -638,6 +637,7 @@ void ForegroundCommand::execute() {
               perror("smash error: kill failed");
               return;
           }
+          our_job->is_stopped = false;
       }
       int status;
       smash.pid_in_fg=our_job->process_id ;
@@ -645,6 +645,9 @@ void ForegroundCommand::execute() {
       if(waitpid(our_job->process_id,&status,WUNTRACED)==-1){
           perror("smash error: waitpid failed");
           return;
+      }
+      if (!our_job->is_stopped) {
+          smash.jobs_list.removeJobById(our_job->job_id);
       }
 
       smash.pid_in_fg = 0;
@@ -674,6 +677,7 @@ void ForegroundCommand::execute() {
                     perror("smash error: kill failed");
                     return;
                 }
+                our_job->is_stopped = false;
             }
             int status;
             smash.pid_in_fg = our_job->process_id;
@@ -681,6 +685,9 @@ void ForegroundCommand::execute() {
             if (waitpid(our_job->process_id, &status, WUNTRACED) == -1) {
                 perror("smash error: waitpid failed");
                 return;
+            }
+            if (!our_job->is_stopped) {
+                smash.jobs_list.removeJobById(our_job->job_id);
             }
             smash.pid_in_fg = 0;
         }
