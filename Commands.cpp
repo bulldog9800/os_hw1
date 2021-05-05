@@ -459,8 +459,8 @@ void JobsList::removeFinishedJobs() {
 
 void JobsList::killAllJobs() {
     for(int i=0 ;i<jobs.size();i++){
-       if( killpg(jobs[i]->process_id,SIGKILL)<0){
-           perror("smash error: killpg failed");
+       if( kill(jobs[i]->process_id,SIGKILL)<0){
+           perror("smash error: kill failed");
        }
         JobEntry* temp = jobs[i];
        jobs.erase(jobs.begin()+i);
@@ -572,7 +572,7 @@ void KillCommand::execute() {
         return;
     }
     if(kill(our_job->process_id, sig) < 0) {
-        perror("smash error: killpg failed");
+        perror("smash error: kill failed");
         return;
     }
     std::cout << "signal number " << sig << " was sent to pid " << our_job->process_id<< std::endl;
