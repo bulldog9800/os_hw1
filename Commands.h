@@ -209,6 +209,7 @@ class SmallShell {
 
  public:
     pid_t pid_in_fg;
+    pid_t smash_pid;
     Command* command_in_fg ;
   static JobsList jobs_list;
   Command *CreateCommand(const char* cmd_line);
