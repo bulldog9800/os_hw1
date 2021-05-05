@@ -500,6 +500,7 @@ void JobsList::addJob(Command *cmd, pid_t pid, bool isStopped) {
     time_t start_time = time(nullptr);
     if(start_time == -1){
         perror("smash error: time failed");
+        return;
     }
     string command = string(cmd->getCommand());
     auto* job_entry = new JobEntry(next_job_id, pid, is_bg, isStopped, command, start_time, cmd);
