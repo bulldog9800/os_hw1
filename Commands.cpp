@@ -301,14 +301,18 @@ void ChangeDirCommand::execute() {
                 string temp = smash.getLWD();
                 smash.changeLWD(string (getcwd(NULL,0)));
                 if (chdir(temp.c_str())==-1){
+                    smash.changeLWD(temp);
                     perror("smash error: chdir failed");
+
                 }
                 return;
             }
         }
         else {
+            string temp = smash.getLWD();
             smash.changeLWD(string (getcwd(NULL,0)));
             if(chdir(args[1])==-1){
+                smash.changeLWD(temp);
                 perror("smash error: chdir failed");
             }
             return;
@@ -397,7 +401,7 @@ JobEntry::JobEntry(int job_id, int pid, bool is_bg, bool is_stopped, string& com
 }
 
 JobEntry * JobsList::getJobById(int jobId) {
-    for (int i=0;i<jobs.size();i++){
+    for (unsigned int i=0;i<jobs.size();i++){
         if (jobs[i]->job_id==jobId)
             return jobs[i];
     }
@@ -405,7 +409,7 @@ JobEntry * JobsList::getJobById(int jobId) {
 }
 
 void JobsList::removeJobById(int jobId) {
-    for(int i=0; i<jobs.size(); i++){
+    for(unsigned int i=0; i<jobs.size(); i++){
         if (jobs[i]->job_id == jobId){
             JobEntry* temp = jobs[i];
             jobs.erase(jobs.begin()+i);
@@ -437,8 +441,7 @@ JobEntry * JobsList::getLastStoppedJob(int *jobId) {
 }
 
 void JobsList::removeFinishedJobs() {
-    int i=0;
-    while(i<jobs.size()){
+    for(int i=0 ;i<jobs.size();i++){
         int status;
         int res = waitpid(jobs[i]->process_id, &status,WNOHANG | WUNTRACED | WCONTINUED);
         if (res==-1){
@@ -542,21 +545,28 @@ void KillCommand::execute() {
         std::cerr << "smash error: kill: invalid arguments" << endl ;
         return;
     }
+
+
     if (args[1][0]!='-'){
         std::cerr << "smash error: kill: invalid arguments" << endl ;
         return;
     }
+
     for (int i=1;i< strlen(args[1]);i++){
         if (!isdigit(args[1][i])){
             std::cerr << "smash error: kill: invalid arguments" << endl ;
             return;
         }
-    }
 
+    }
+    int num_of_minos=0;
     for (int i=0;i< strlen(args[2]);i++){
-        if (!isdigit(args[2][i])){
+        if ((!isdigit(args[2][i]) && args[2][i] != '-')||num_of_minos>1){
             std::cerr << "smash error: kill: invalid arguments" << endl ;
             return;
+        }
+        if(args[1][i] == '-'){
+            num_of_minos++;
         }
 
     }
@@ -576,6 +586,9 @@ void KillCommand::execute() {
         return;
     }
     std::cout << "signal number " << sig << " was sent to pid " << our_job->process_id<< std::endl;
+    if(sig==SIGKILL){
+        smash.jobs_list.removeJobById(our_job->job_id);
+    }
     if(sig==SIGCONT){
         our_job->is_stopped= false ;
         our_job->is_bg= true ;
@@ -638,12 +651,17 @@ void ForegroundCommand::execute() {
     }
     ////with_args
     else {
-        for (int i = 0; i < strlen(args[1]); i++) {
-            if (!isdigit(args[1][i])) {
-                std::cerr << "smash error: fg: invalid arguments" << endl;
+        int num_of_minos=0;
+        for (int i=0;i< strlen(args[1]);i++){
+            if ((!isdigit(args[1][i]) && args[1][i] != '-')||num_of_minos>1){
+                std::cerr << "smash error: fg: invalid arguments" << endl ;
                 return;
-
             }
+            if(args[1][i] == '-'){
+                num_of_minos++;
+            }
+
+        }
             int job_id = atoi(args[1]);
             JobEntry *our_job = smash.jobs_list.getJobById(job_id);
             if (our_job == nullptr) {
@@ -668,7 +686,7 @@ void ForegroundCommand::execute() {
         }
     }
 
-}
+
 
 
 
@@ -717,15 +735,21 @@ void BackgroundCommand::execute() {
     }
 
     /// With args
-    for (int i = 0; i < strlen(args[1]); i++) {
-        if(!isdigit(args[1][i])){
-            std::cerr << "smash error: fg: invalid arguments" << endl;
+    int num_of_minos=0;
+    for (int i=0;i< strlen(args[1]);i++){
+        if ((!isdigit(args[1][i]) && args[1][i] != '-')||num_of_minos>1){
+            std::cerr << "smash error: fg: invalid arguments" << endl ;
             return;
         }
+        if(args[1][i] == '-'){
+            num_of_minos++;
+        }
+
+    }
         int job_id = atoi(args[1]);
         JobEntry* our_job = smash.jobs_list.getJobById(job_id);
         if(our_job== nullptr){
-            cerr<<" smash error: fg: job-id " << job_id << "does not exist" << endl;
+            cerr<<"smash error: bg: job-id " << job_id << " does not exist" << endl;
             return;
         }
         cout << our_job->command << " : " << our_job->process_id;
@@ -736,7 +760,7 @@ void BackgroundCommand::execute() {
         our_job->is_stopped = false;
         our_job->is_bg = true;
     }
-}
+
 
 
 /****************************
@@ -773,6 +797,7 @@ void QuitCommand::execute() {
             }
 
             exit(0);
+
         }
     }
 
@@ -817,14 +842,14 @@ RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line)
     }
     int fd;
     if (is_append){
-        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_APPEND, 0666);
+        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_APPEND);
         if (fd == -1) {
             perror("smash error: open failed");
             return;
         }
     }
     else {
-        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
+        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC);
         if (fd == -1) {
             perror("smash error: open failed");
             return;
@@ -968,7 +993,7 @@ void PipeCommand::execute() {
 
 /************************************
 *
-*       CAT COMMAND
+*       cat COMMAND
 *
 ************************************/
 CatCommand::CatCommand(const char *cmd_line) : BuiltInCommand(cmd_line){
@@ -986,20 +1011,20 @@ void CatCommand::execute() {
         cerr <<"smash error: cat: not enough arguments"<<endl ;
     }
     for(int i=1;i<num_of_args;i++){
-        int f = open(args[i], O_RDONLY, 0777);
+        int f = open(args[i], O_RDONLY,0777);
         if(f==-1){
             perror("smash error: open failed");
             return;
         }
         char* buffer= new char[200];
         int num_read=0;
-        while((num_read = read(f,buffer,200)) !=0){
+        while((num_read= read(f,buffer,200)) !=0){
             if(num_read==-1){
                 perror("smash error: read failed");
                 return;
             }
             int num_write=0;
-            while(num_write < num_read){
+            while(num_write<num_read){
                 num_write= (int)write(1,buffer,num_read);
                 if(num_write==-1){
                     perror("smash error: write failed");
