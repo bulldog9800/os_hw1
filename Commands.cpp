@@ -84,7 +84,7 @@ void _removeBackgroundSign(char* cmd_line) {
 
 // TODO: Add your implementation for classes in Commands.h 
 
-SmallShell::SmallShell(): prompt("smash> "), last_working_dir("") {
+SmallShell::SmallShell(): prompt("smash> "), last_working_dir(""), smash_pid(getpid()), pid_in_fg(0) {
 
 }
 
@@ -250,7 +250,8 @@ ShowPidCommand::ShowPidCommand(const char *cmd_line) : BuiltInCommand(cmd_line) 
 }
 
 void ShowPidCommand::execute() {
-    cout << "smash pid is " << getpid() << endl;
+    SmallShell& smash = SmallShell::getInstance();
+    cout << "smash pid is " << smash.smash_pid << endl;
 }
 
 GetCurrDirCommand::GetCurrDirCommand(const char *cmd_line) : BuiltInCommand(cmd_line){
@@ -759,7 +760,11 @@ void BackgroundCommand::execute() {
             cerr<<"smash error: bg: job-id " << job_id << " does not exist" << endl;
             return;
         }
-        cout << our_job->command << " : " << our_job->process_id;
+        if (!our_job->is_stopped) {
+            cerr<<"smash error: bg: job-id " << job_id << " is already running in the background" << endl;
+            return;
+        }
+        cout << our_job->command << " : " << our_job->process_id << endl;
         if(kill(our_job->process_id,SIGCONT)==-1){
             perror("smash error: kill failed");
             return;
@@ -849,14 +854,14 @@ RedirectionCommand::RedirectionCommand(const char *cmd_line) : Command(cmd_line)
     }
     int fd;
     if (is_append){
-        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_APPEND);
+        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
         if (fd == -1) {
             perror("smash error: open failed");
             return;
         }
     }
     else {
-        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC);
+        fd = open(file_path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0777);
         if (fd == -1) {
             perror("smash error: open failed");
             return;
@@ -893,7 +898,7 @@ void RedirectionCommand::execute() {
 
 PipeCommand::PipeCommand(const char* cmd_line): Command(cmd_line){
     string cmd_s = _trim(string(cmd_line));
-    int position =cmd_s.find_last_not_of('|');
+    int position =cmd_s.find('|');
     if(cmd_s[position+1]=='&'){
         second_command_str=cmd_s.substr(position + 2, cmd_s.size());
         stderr_flag=true ;
@@ -984,7 +989,7 @@ void PipeCommand::execute() {
         perror("smash error: close failed");
         return;
     }
-    /*
+
     if(waitpid(pid1, nullptr, WUNTRACED)==-1){
         perror("smash error: waitpid failed");
         return;
@@ -993,7 +998,7 @@ void PipeCommand::execute() {
         perror("smash error: waitpid failed");
         return;
     }
-     */
+
 
 
 }
