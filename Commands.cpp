@@ -84,7 +84,7 @@ void _removeBackgroundSign(char* cmd_line) {
 
 // TODO: Add your implementation for classes in Commands.h 
 
-SmallShell::SmallShell(): prompt("smash> "), last_working_dir(""), smash_pid(getpid()), pid_in_fg(0) {
+SmallShell::SmallShell(): prompt("smash> "), last_working_dir(""), pid_in_fg(0), smash_pid(getpid()) {
 
 }
 
@@ -355,7 +355,7 @@ void ExternalCommand::execute() {
         return;
     }
     if(pid==0){
-        char* exec_args[4]={"bash","-c",command,NULL} ;
+        char* exec_args[4]={"/bin/bash","-c",command,NULL} ;
         if(setpgrp()==-1) {
             perror("smash error: setgrp failed");
         }
@@ -424,8 +424,6 @@ JobEntry *JobsList::getLastJob(int *lastJobId) {
         *lastJobId = -1;
         return nullptr;
     }
-    int size = jobs.size();
-    JobEntry* entry =  jobs[jobs.size()-1];
     *lastJobId = jobs[jobs.size()-1]->job_id;
     return jobs[jobs.size()-1];
 }
@@ -443,7 +441,7 @@ JobEntry * JobsList::getLastStoppedJob(int *jobId) {
 
 void JobsList::removeFinishedJobs() {
     vector<int> to_be_removed;
-    for(int i=0 ;i<jobs.size(); i++){
+    for(unsigned int i=0 ;i<jobs.size(); i++){
         int status;
         int res = waitpid(jobs[i]->process_id, &status,WNOHANG | WUNTRACED | WCONTINUED);
         if (res==-1){
@@ -454,14 +452,14 @@ void JobsList::removeFinishedJobs() {
             to_be_removed.push_back(jobs[i]->job_id);
         }
     }
-    for (int i=0; i<to_be_removed.size(); i++){
+    for (unsigned int i=0; i<to_be_removed.size(); i++){
         removeJobById(to_be_removed[i]);
     }
 }
 
 
 void JobsList::killAllJobs() {
-    for(int i=0 ;i<jobs.size();i++){
+    for(unsigned int i=0 ;i<jobs.size();i++){
        if( kill(jobs[i]->process_id,SIGKILL)<0){
            perror("smash error: kill failed");
        }
@@ -475,7 +473,7 @@ void JobsList::killAllJobs() {
 
 void JobsList::printJobsList() {
     removeFinishedJobs() ;
-    for(int i=0;i<jobs.size();i++){
+    for(unsigned int i=0;i<jobs.size();i++){
         if(jobs[i]->is_stopped){
             cout<< "[" << jobs[i]->job_id<<"] "<<jobs[i]->command<<" : "<<jobs[i]->process_id<< " "<<difftime(time(nullptr),jobs[i]->start_time)<< " secs (stopped)" << endl ;
         }
@@ -509,7 +507,7 @@ void JobsList::addJob(Command *cmd, pid_t pid, bool isStopped) {
 }
 
 JobEntry *JobsList::getJobByPid(int pid) {
-    for (int i=0;i<jobs.size();i++){
+    for (unsigned int i=0;i<jobs.size();i++){
         if (jobs[i]->process_id==pid)
             return jobs[i];
     }
@@ -553,7 +551,7 @@ void KillCommand::execute() {
         return;
     }
 
-    for (int i=1;i< strlen(args[1]);i++){
+    for (unsigned int i=1;i< strlen(args[1]);i++){
         if (!isdigit(args[1][i])){
             std::cerr << "smash error: kill: invalid arguments" << endl ;
             return;
@@ -561,7 +559,7 @@ void KillCommand::execute() {
 
     }
     int num_of_minos=0;
-    for (int i=0;i< strlen(args[2]);i++){
+    for (unsigned int i=0;i< strlen(args[2]);i++){
         if ((!isdigit(args[2][i]) && args[2][i] != '-')||num_of_minos>1){
             std::cerr << "smash error: kill: invalid arguments" << endl ;
             return;
@@ -657,7 +655,7 @@ void ForegroundCommand::execute() {
     ////with_args
     else {
         int num_of_minos=0;
-        for (int i=0;i< strlen(args[1]);i++){
+        for (unsigned int i=0;i< strlen(args[1]);i++){
             if ((!isdigit(args[1][i]) && args[1][i] != '-')||num_of_minos>1){
                 std::cerr << "smash error: fg: invalid arguments" << endl ;
                 return;
@@ -745,7 +743,7 @@ void BackgroundCommand::execute() {
 
     /// With args
     int num_of_minos=0;
-    for (int i=0;i< strlen(args[1]);i++){
+    for (unsigned int i=0;i< strlen(args[1]);i++){
         if ((!isdigit(args[1][i]) && args[1][i] != '-')||num_of_minos>1){
             std::cerr << "smash error: fg: invalid arguments" << endl ;
             return;
@@ -798,11 +796,11 @@ void QuitCommand::execute() {
         if (strcmp(args[1], "kill") == 0) {
             SmallShell::jobs_list.removeFinishedJobs();
             cout << "smash: sending SIGKILL signal to " << smash.jobs_list.jobs.size() << " jobs:" << endl;
-            for (int i = 0; i < smash.jobs_list.jobs.size(); i++) {
+            for (unsigned int i = 0; i < smash.jobs_list.jobs.size(); i++) {
                 cout << smash.jobs_list.jobs[i]->process_id << ": " << smash.jobs_list.jobs[i]->command << endl;
 
             }
-            for (int i = 0; i < smash.jobs_list.jobs.size(); i++) {
+            for (unsigned int i = 0; i < smash.jobs_list.jobs.size(); i++) {
                 if (kill(smash.jobs_list.jobs[i]->process_id, SIGKILL) == -1) {
                     perror("smash error: kill failed");
                     return;
